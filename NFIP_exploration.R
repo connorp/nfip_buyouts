@@ -4,21 +4,20 @@
 
 library(data.table)
 library(jsonlite)
+library(httr)
 library(crul)
 
 policies_path <- "https://www.fema.gov/api/open/v1/FimaNfipPolicies"
 claims_path <- "https://www.fema.gov/api/open/v1/FimaNfipClaims"
 
-policies_columns <- "censusTract,countyCode,elevationDifference,latitude,longitude,policyCost,policyEffectiveDate,reportedCity"
-
 query_FEMA_API <- function(API_url, columns = NULL, rowfilter = NULL, perQuery = 1000, queryCap = NULL) {
   # First find out how long the data are
-  initial_resp <- GET(url = API_url,
-                      query = list(`$inlinecount` = 'allpages',
-                                   `$top` = 1,
-                                   `$filter` = rowfilter))
-  initial_res <- fromJSON(content(policies_response, as = "text"))
-  N <- initial_res$metadata$count
+  initial_resp <- httr::GET(url = API_url,
+                            query = list(`$inlinecount` = 'allpages',
+                                         `$top` = 1,
+                                         `$filter` = rowfilter))
+  parsed_result <- jsonlite::fromJSON(httr::content(initial_resp, as = "text"))
+  N <- parsed_result$metadata$count
 
   # If we don't want to pull the full table
   if (!is.null(queryCap)) {
@@ -28,11 +27,11 @@ query_FEMA_API <- function(API_url, columns = NULL, rowfilter = NULL, perQuery =
   # Build the vector of URLs to query
   assemble_url <- function(skipN) {
     # Assemble a single URL with the appropriate number of rows skipped
-    final_url <- modify_url(url = API_url,
-                            query = list(`$skip` = skipN,
-                                         `$filter` = rowfilter,
-                                         `$select` = columns,
-                                         `$top` = perQuery))
+    final_url <- httr::modify_url(url = API_url,
+                                  query = list(`$skip` = skipN,
+                                               `$filter` = rowfilter,
+                                               `$select` = columns,
+                                               `$top` = perQuery))
     return(final_url)
   }
 
@@ -45,7 +44,7 @@ query_FEMA_API <- function(API_url, columns = NULL, rowfilter = NULL, perQuery =
   query_results <- Async_client$get()
 
   parse_query <- function(query_result) {
-    query_outputs <- fromJSON(query_result$parse("UTF-8"))
+    query_outputs <- jsonlite::fromJSON(query_result$parse("UTF-8"))
     # Need to get the name of the two attributes, and use the second one
     tablename <- names(query_outputs)[2]
     return(query_outputs[[tablename]])
