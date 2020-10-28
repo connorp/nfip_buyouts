@@ -29,7 +29,10 @@ IFS=$'\n\t'
 #    character, but I was not smart. So I called the jq function to convert the JSON in
 #    place to NDJSON, which essentially just extracted that top level array.
 
-cat fimanfippolicies.json | jq -c '.[]' > policies_ND_intermed.json
+cat fimanfippolicies.json | jq -c '.[]' > nfippolicies_NDJSON.json
+
+# Better approach:
+# tail -c +22 fimanfippolicies.json > policies_ND_intermed.json
 
 # Our file now looks like this:
 # [{entry1},{entry2},…,{entryN}]
@@ -39,6 +42,9 @@ cat fimanfippolicies.json | jq -c '.[]' > policies_ND_intermed.json
 # spec, we again use the jq command.
 
 cat policies_ND_intermed.json | jq -c '.[]' > nfippolicies_NDJSON.json
+
+# Better approach:
+# sed -i '' $"s/},{/}\\\n{/" nfippolicies_NDJSON.json
 
 # This should yield a file of the format
 # {entry1}
