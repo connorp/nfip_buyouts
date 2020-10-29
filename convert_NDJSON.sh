@@ -24,22 +24,16 @@ IFS=$'\n\t'
 
 
 # Steps:
-# 1. Get access to the inner array of entries. The smart way to do that would probably be
-#    to just strip the initial 21 characters from the top of the file, and add a closing ]
-#    character, but I was not smart. So I called the jq function to convert the JSON in
-#    place to NDJSON, which essentially just extracted that top level array.
+# 1. Get access to the inner array of entries. We strip the initial 21 characters
+#    from the top of the file.
 
-cat fimanfippolicies.json | jq -c '.[]' > nfippolicies_NDJSON.json
-
-# Better approach:
-# tail -c +22 fimanfippolicies.json > policies_ND_intermed.json
+tail -c +22 fimanfippolicies.json > policies_ND_intermed.json
 
 # Our file now looks like this:
-# [{entry1},{entry2},…,{entryN}]
+# {entry1},{entry2},…,{entryN}
 
 # I believe all we need to do is replace the comma separating each entry with a newline
-# character, and remove the outer brackets. But to be sure we are following the NDJSON
-# spec, we again use the jq command.
+# character. But to be sure we are following the NDJSON spec, we use the jq command.
 
 cat policies_ND_intermed.json | jq -c '.[]' > nfippolicies_NDJSON.json
 
