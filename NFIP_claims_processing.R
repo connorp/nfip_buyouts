@@ -27,4 +27,4 @@ claims <- assemble_claims(state="NC")
 ## ---- import-NFHL-zones ----
 
 # nfhl_layers <- st_layers("../nfip_data/NFHL/NFHL_48_20201014.gdb")
-nfhl <- st_read("../nfip_data/NFHL/NFHL_48_20201014.gdb", "S_Fld_Haz_Ar")
+nfhl <- sf::st_read("../nfip_data/NFHL/NFHL_48_20201014.gdb", "S_Fld_Haz_Ar")

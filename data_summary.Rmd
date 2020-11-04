@@ -1,0 +1,45 @@
+---
+title: Data Summary
+author: Connor P. Jackson
+date: "`r format(Sys.time(), '%B %d, %Y - %H:%M %Z')`"
+output:
+  html_notebook:
+    fig_caption: yes
+    number_sections: yes
+    df_print: !expr pander::pander
+  pdf_document:
+    fig_caption: yes
+    toc: yes
+    number_sections: yes
+    df_print: !expr pander::pander
+linestretch:
+fontsize:
+linkcolor: blue
+urlcolor: blue
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+library(pander)
+library(rmarkdown)
+library(demogztrax)
+library(data.table)
+library(sf)
+read_chunk("NFIP_claims_processing.R")
+read_chunk("ztrax_processing.R")
+options(knitr.kable.NA = '')
+panderOptions("digits", 5)
+panderOptions("table.split.cells", 15)
+panderOptions("table.split.table", 120)
+```
+
+This research is built upon two primary data sources: flood insurance claims filed with the National Flood Insurance Program, and real estate assessment and transaction records
+
+
+```{r import-ztrax-assessment, include=FALSE}
+```
+
+```{r import-nfip-claims, include=FALSE}
+```
+
+
