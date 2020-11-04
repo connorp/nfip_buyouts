@@ -3,14 +3,28 @@
 ## Exploratory code: FEMA National Flood Insurance Program
 
 library(data.table)
-library(jsonlite)
+library(sf)
 
-claims <- fread("~/Google Drive (cpjackson@berkeley.edu)/Second year paper/FimaNfipClaims.csv",
-                stringsAsFactors = TRUE)
+## ---- import-nfip-claims ----
 
-validclaims <-
-claims[occupancyType == 1 & totalBuildingInsuranceCoverage > 0 &
-         totalBuildingInsuranceCoverage <= 250000 & amountPaidOnBuildingClaim > 0 &
-         amountPaidOnBuildingClaim <= 250000 &
-         amountPaidOnBuildingClaim <= totalBuildingInsuranceCoverage]
+assemble_claims <-function(path="../data_buyouts/FimaNfipClaims.csv", state=NULL) {
+  claims <- fread(path, stringsAsFactors = TRUE)
 
+  validclaims <-
+    claims[occupancyType == 1 & totalBuildingInsuranceCoverage > 0 &
+             totalBuildingInsuranceCoverage <= 250000 & amountPaidOnBuildingClaim > 0 &
+             amountPaidOnBuildingClaim <= 250000 &
+             amountPaidOnBuildingClaim <= totalBuildingInsuranceCoverage]
+  if (is.null(state)) {
+    return(validclaims)
+  } else {
+    return(validclaims[state == ..state])
+  }
+}
+
+claims <- assemble_claims(state="NC")
+
+## ---- import-NFHL-zones ----
+
+# nfhl_layers <- st_layers("../nfip_data/NFHL/NFHL_48_20201014.gdb")
+nfhl <- st_read("../nfip_data/NFHL/NFHL_48_20201014.gdb", "S_Fld_Haz_Ar")
