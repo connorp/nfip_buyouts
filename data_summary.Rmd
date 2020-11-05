@@ -34,15 +34,22 @@ panderOptions("table.split.cells", 15)
 panderOptions("table.split.table", 120)
 ```
 
-```{r import-ztrax-assessment, include=FALSE}
+<!-- Code chunk to import the data raw from the ZTRAX database -->
+```{r import-ztrax-assessment, include=FALSE, eval=FALSE}
 ```
+
+<!-- To restore the data created above without rerunning it, import this csv file -->
+```{r read-assessment-csv}
+nchomes <- fread("../data_buyouts/ZAsmt_NC.csv")
+```
+
 
 ```{r import-nfip-claims, include=FALSE}
 ```
 
 This research is built upon two primary data sources: flood insurance claims filed with the National Flood Insurance Program, and real estate assessment and transaction records from the Zillow ZTRAX dataset. This research will focus on North Carolina, which is one of the primary states covered by NFIP policies and receiving claims. North Carolina was selected based on its high frequency of tropical storms and flooding incidents, complete coverage of digital flood maps, and variation in community characteristics in special flood hazard areas. Much of North Carolina's severe weather comes in the form of large amounts of precipitation and storm surge, rather than damaging winds, which are not covered by the NFIP. In addition, nearly all of North Carolina's counties (including all of its coastal counties) have digitized flood insurance rate maps (FIRMs), which allow us to identify the flood zone of nearly every property in the state. 
 
-The NFIP claims data details every claim filed with the NFIP in the state from 1977 through 2019. 
+The NFIP claims data details every claim filed with the NFIP in the state from 1977 through 2019. The data include details about the insured property, the insurance coverage, and the loss event and subsequent claim and payout. We discard claims that cover only loss of contents (either due to the policyholder not holding any building coverage, or not submitting a claim for building damage), as well as those with listed payouts that exceed the maximum coverage of $250,000. The table below lists some descriptive statistics for the North Carolina claims data.
 
 ```{r claims-summary}
 claims[, .(Counties = uniqueN(countyCode), 
@@ -66,5 +73,12 @@ claims[, .(Counties = uniqueN(countyCode),
            averageYearBuilt = mean(year(originalConstructionDate), na.rm = TRUE))]
 ```
 
+The [ZTRAX data](https://www.zillow.com/research/ztrax/) are a real estate database of properties comprised of both assessor records and real estate transaction records, compiled into a nationwide database by Zillow. The assessor data include details about the parcel and primary structure, location (street address, census tract, and latitude and longitude), and value (assessed and market values). 
+
+<!-- Census tract format: 2 digit state + 3 digit county + 6 digit tract (maybe containing a decimal) + 4 digit block -->
+
+```{r ztrax-assessor-summary}
+
+```
 
 
