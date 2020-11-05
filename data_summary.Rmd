@@ -34,13 +34,37 @@ panderOptions("table.split.cells", 15)
 panderOptions("table.split.table", 120)
 ```
 
-This research is built upon two primary data sources: flood insurance claims filed with the National Flood Insurance Program, and real estate assessment and transaction records
-
-
 ```{r import-ztrax-assessment, include=FALSE}
 ```
 
 ```{r import-nfip-claims, include=FALSE}
 ```
+
+This research is built upon two primary data sources: flood insurance claims filed with the National Flood Insurance Program, and real estate assessment and transaction records from the Zillow ZTRAX dataset. This research will focus on North Carolina, which is one of the primary states covered by NFIP policies and receiving claims. North Carolina was selected based on its high frequency of tropical storms and flooding incidents, complete coverage of digital flood maps, and variation in community characteristics in special flood hazard areas. Much of North Carolina's severe weather comes in the form of large amounts of precipitation and storm surge, rather than damaging winds, which are not covered by the NFIP. In addition, nearly all of North Carolina's counties (including all of its coastal counties) have digitized flood insurance rate maps (FIRMs), which allow us to identify the flood zone of nearly every property in the state. 
+
+The NFIP claims data details every claim filed with the NFIP in the state from 1977 through 2019. 
+
+```{r claims-summary}
+claims[, .(Counties = uniqueN(countyCode), 
+           meanElevation = mean(.SD[abs(elevationDifference) < 20, elevationDifference], 
+                                na.rm = TRUE),
+           fractionElevated = mean(elevatedBuildingIndicator, na.rm = TRUE),
+           fractionSFHA = mean(sfha, na.rm = TRUE),
+           fractionRequiredToElevate = mean(postFIRMConstructionIndicator, na.rm = TRUE),
+           averageBldgPayout = mean(amountPaidOnBuildingClaim, na.rm = TRUE),
+           averageBldgCoverage = mean(totalBuildingInsuranceCoverage, na.rm = TRUE),
+           averageBldgPayoutFraction = mean(amountPaidOnBuildingClaim / totalBuildingInsuranceCoverage,
+                                        na.rm = TRUE),
+           averagePayout = mean(amountPaidOnBuildingClaim + amountPaidOnContentsClaim +
+                                  amountPaidOnIncreasedCostOfComplianceClaim, na.rm = TRUE),
+           averageCoverage = mean(totalBuildingInsuranceCoverage + totalContentsInsuranceCoverage,
+                                  na.rm = TRUE),
+           averagePayoutFraction = mean((amountPaidOnBuildingClaim + amountPaidOnContentsClaim +
+                                         amountPaidOnIncreasedCostOfComplianceClaim) /
+                                        (totalBuildingInsuranceCoverage + totalContentsInsuranceCoverage),
+                                        na.rm = TRUE),
+           averageYearBuilt = mean(year(originalConstructionDate), na.rm = TRUE))]
+```
+
 
 

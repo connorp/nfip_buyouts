@@ -24,7 +24,8 @@ assemble_claims <-function(path="../data_buyouts/FimaNfipClaims.csv", state=NULL
 }
 
 claims <- assemble_claims(state="NC")
-
+claims[abs(elevationDifference) == 999, elevationDifference := NA]
+claims[, sfha := grepl("A|V", floodZone)]
 
 ## ---- import-NFHL-zones ----
 

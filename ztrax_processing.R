@@ -31,6 +31,8 @@ read_assessment <- function(state, files=NULL, colnames=NULL){
 nchomes <- read_assessment("NC", file_names, colnames_all)
 nctracts <- tracts(37)
 
+fwrite(nchomes, "../data_buyouts/ZAsmt_NC.csv")
+
 # Manually import some data?
 # nc <- fread("~/ZTRAX/clean/2019/Zillow_Assessor/37/ZAsmt/Main.txt",
 #             sep="|", col.names = colnames_nc_main, select = cols_main, header = FALSE)
