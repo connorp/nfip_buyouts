@@ -39,7 +39,7 @@ panderOptions("table.split.table", 120)
 ```
 
 <!-- To restore the data created above without rerunning it, import this csv file -->
-```{r read-assessment-csv}
+```{r read-assessment-csv, include=FALSE}
 nchomes <- fread("../data_buyouts/ZAsmt_NC.csv")
 ```
 
@@ -78,6 +78,7 @@ The [ZTRAX data](https://www.zillow.com/research/ztrax/) are a real estate datab
 <!-- Census tract format: 2 digit state + 3 digit county + 6 digit tract (maybe containing a decimal) + 4 digit block -->
 
 ```{r ztrax-assessor-summary}
+
 
 ```
 
