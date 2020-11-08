@@ -52,7 +52,7 @@ fwrite(nchomes, "../data_buyouts/ZAsmt_NC.csv")
 ## ---- import-ztrax-transactions ----
 Ztrans_struct <- demogztrax::layout_spec$Zillow_Transaction.ZTrans
 
-cols_trans <- c(1,2,5,7,17:20,25,27:32,60:63,66,68,102)
+cols_trans <- c(1,2,5,7,17,18,25,27:32,60:63,66,68,102)
 colnames_trans <- Ztrans_struct[TableName == "utMain" & column_id %in% cols_trans, FieldName]
 colnames_trans <- c(colnames_trans, "ImportParcelID")
 trans_files <- c("utMain", "utPropertyInfo")

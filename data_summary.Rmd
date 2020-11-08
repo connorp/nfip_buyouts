@@ -78,7 +78,7 @@ claims[, .(Counties = uniqueN(countyCode),
 
 The [ZTRAX data](https://www.zillow.com/research/ztrax/) are a real estate database of properties comprised of both assessor records and real estate transaction records, compiled into a nationwide database by Zillow. The assessor data include details about the parcel and primary structure, location (street address, census tract, and latitude and longitude), and value (assessed and market values). This table is used to identify our sample of North Carolina homes. We limit our sample to single family homes, excluding rural residences (homes on productive agricultural land) as well as condominums and similar structures.
 
-The transaction data then contains information about every real estate transaction recorded for the parcels in the assessor data. The records include the date and type of transaction, information about the buyer, seller, and lender, if applicable, sale price and any taxes, and mortgage information. We will use these data to identify home sales in the wake of a flood. The table below lists some descriptive statistics for the combined assessor and transaction records. 
+The transaction data then contains information about every real estate transaction recorded for the parcels in the assessor data. The records include the date and type of transaction, information about the buyer, seller, and lender, if applicable, sale price and any taxes, and mortgage information. We will use these data to identify home sales in the wake of a flood. The table below lists some descriptive statistics for the combined assessor and transaction records.
 
 <!-- Census tract format: 2 digit state + 3 digit county + 6 digit tract (maybe containing a decimal) + 4 digit block -->
 
