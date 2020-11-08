@@ -43,8 +43,8 @@ panderOptions("table.split.table", 120)
 
 <!-- To restore the data created above without rerunning it, import this csv file -->
 ```{r read-ztrax-csv, include=FALSE}
-nchomes <- fread("../data_buyouts/ZAsmt_NC.csv")
-nctrans <- fread("../data_buyouts/ZTrans_NC.csv")
+nchomes <- fread("../data_buyouts/ZAsmt_NC.csv", key="ImportParcelID", index="latest")
+nctrans <- fread("../data_buyouts/ZTrans_NC.csv", key="ImportParcelID")
 ```
 
 ```{r import-nfip-claims, include=FALSE}
@@ -76,14 +76,18 @@ claims[, .(Counties = uniqueN(countyCode),
            averageYearBuilt = mean(year(originalConstructionDate), na.rm = TRUE))]
 ```
 
-The [ZTRAX data](https://www.zillow.com/research/ztrax/) are a real estate database of properties comprised of both assessor records and real estate transaction records, compiled into a nationwide database by Zillow. The assessor data include details about the parcel and primary structure, location (street address, census tract, and latitude and longitude), and value (assessed and market values). This table is used to identify our sample of North Carolina homes. We limit our sample to single family homes, excluding rural residences (homes on productive agricultural land) as well as condominums and similar structures.
+The [ZTRAX data](https://www.zillow.com/research/ztrax/) are a real estate database of properties comprised of both assessor records and real estate transaction records, compiled into a nationwide database by Zillow. The assessor data include details about the parcel and primary structure, location (street address, census tract, and latitude and longitude), and value (assessed and market values). This table is used to identify our sample of North Carolina homes. We limit our sample to single family homes, excluding rural residences (homes on productive agricultural land) as well as condominums and similar structures. Assessment data are available from `r nchomes[, min(year(record_date))]` through `r nchomes[, max(year(record_date))]`.
 
-The transaction data then contains information about every real estate transaction recorded for the parcels in the assessor data. The records include the date and type of transaction, information about the buyer, seller, and lender, if applicable, sale price and any taxes, and mortgage information. We will use these data to identify home sales in the wake of a flood. The table below lists some descriptive statistics for the combined assessor and transaction records.
+The transaction data then contains information about every real estate transaction recorded for the parcels in the assessor data. The records include the date and type of transaction, information about the buyer, seller, and lender, if applicable, sale price and any taxes, and mortgage information. We will use these data to identify home sales in the wake of a flood. Transaction data are available for transactions from `r nctrans[, min(year(RecordingDate), na.rm = TRUE)]` through `r nctrans[, max(year(RecordingDate), na.rm = TRUE)]`.
 
-<!-- Census tract format: 2 digit state + 3 digit county + 6 digit tract (maybe containing a decimal) + 4 digit block -->
+The table below lists some descriptive statistics for the combined assessor and transaction records. The average assessed and market values are reported in nominal dollars in the most recent year of observation, which for nearly every property is either 2013 or 2014.
 
 ```{r ztrax-assessor-summary}
-nchomes[, .(number_homes = uniqueN(ImportParcelID))]
+nchomes[nctrans[!is.na(ImportParcelID), .N, keyby = .(ImportParcelID)], numTransactions := N]
+nchomes[, .(number_homes = uniqueN(ImportParcelID), 
+            medianYearBuilt = round(median(.SD[latest == TRUE, YearBuilt], na.rm = TRUE), 0),
+            averageAssessedValue = mean(.SD[latest == TRUE, TotalAssessedValue], na.rm = TRUE),
+            averageMarketValue = mean(.SD[latest == TRUE, TotalMarketValue], na.rm = TRUE),
+            averageNumberTransactions = mean(.SD[latest == TRUE, numTransactions], na.rm = TRUE))]
 ```
-
 

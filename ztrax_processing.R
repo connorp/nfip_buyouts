@@ -45,9 +45,8 @@ nchomes[PropertyAddressCensusTractAndBlock == "", PropertyAddressCensusTractAndB
 
 fwrite(nchomes, "../data_buyouts/ZAsmt_NC.csv")
 
-# Manually import some data?
-# nc <- fread("~/ZTRAX/clean/2019/Zillow_Assessor/37/ZAsmt/Main.txt",
-#             sep="|", col.names = colnames_nc_main, select = cols_main, header = FALSE)
+# Census tract format: 2 digit state + 3 digit county +
+# 6 digit tract (maybe containing a decimal) + 4 digit block
 
 ## ---- import-ztrax-transactions ----
 Ztrans_struct <- demogztrax::layout_spec$Zillow_Transaction.ZTrans
