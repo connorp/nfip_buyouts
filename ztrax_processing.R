@@ -3,6 +3,7 @@
 ## ZTRAX data import and processing
 
 library(data.table)
+library(lubridate)
 library(demogztrax)
 
 ## ---- import-ztrax-assessment ----
@@ -35,6 +36,7 @@ nchomes <- nchomes[PropertyLandUseStndCode %in% home_types]
 
 # Identify the most recent assessment records
 nchomes[, latest := (.I[which.max(Edition)] == .I), by = .(ImportParcelID)]
+nchomes[, record_date := parse_date_time(ExtractDate, "mY")]
 
 # Handle empty strings
 nchomes[PropertyFullStreetAddress == "", PropertyFullStreetAddress := NA]
