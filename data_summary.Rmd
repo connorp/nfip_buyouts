@@ -3,13 +3,11 @@ title: Data Summary
 author: Connor P. Jackson
 date: "`r format(Sys.time(), '%B %d, %Y - %H:%M %Z')`"
 output:
-  html_notebook:
-    fig_caption: yes
-    number_sections: yes
-    df_print: !expr pander::pander
   pdf_document:
     fig_caption: yes
-    toc: yes
+    df_print: !expr pander::pander
+  html_notebook:
+    fig_caption: yes
     number_sections: yes
     df_print: !expr pander::pander
 linestretch:
@@ -90,4 +88,8 @@ nchomes[, .(number_homes = uniqueN(ImportParcelID),
             averageMarketValue = mean(.SD[latest == TRUE, TotalMarketValue], na.rm = TRUE),
             averageNumberTransactions = mean(.SD[latest == TRUE, numTransactions], na.rm = TRUE))]
 ```
+
+There are a few data issues that will need to be handled carefully in our estimation strategy. The primary limitation is that policy claims are not identifiable down to the specific address level due to federal privacy regulations. We can match homes to NFIP policies only at the census tract level. While parcel level matching would be ideal for this research, even matches at the census tract level will provide insight into the behavior of homeowners before and after a flood event. 
+
+The ZTRAX data are pulled from nationwide county public records whose quality and fidelity vary widely. As a result, there are some additional data availability and quality issues that will need to be handled. First, there are several flood-relevant house attributes we do not observe for homes without flood insurance: namely the base elevation of the home. In addition, many housing transactions do not occur at the full market price, such as transfers between family members. These transfers will need to be identified and handled separately. Finally, both market and assessed values of homes are updated only periodically, and thus may not reflect the true value of a home at any given time.
 

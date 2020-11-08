@@ -23,6 +23,8 @@ assemble_claims <-function(path="../data_buyouts/FimaNfipClaims.csv", state=NULL
   }
 }
 
+# Need to handle negative claim amounts and corresponding duplicate claim payments
+
 claims <- assemble_claims(state="NC")
 claims[abs(elevationDifference) == 999, elevationDifference := NA]
 claims[, sfha := grepl("A|V", floodZone)]
