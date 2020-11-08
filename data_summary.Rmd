@@ -34,13 +34,17 @@ panderOptions("table.split.cells", 15)
 panderOptions("table.split.table", 120)
 ```
 
-<!-- Code chunk to import the data raw from the ZTRAX database -->
+<!-- Code chunks to import the data raw from the ZTRAX database -->
 ```{r import-ztrax-assessment, include=FALSE, eval=FALSE}
 ```
 
+```{r import-ztrax-transactions, include=FALSE, eval=FALSE}
+```
+
 <!-- To restore the data created above without rerunning it, import this csv file -->
-```{r read-assessment-csv, include=FALSE}
+```{r read-ztrax-csv, include=FALSE}
 nchomes <- fread("../data_buyouts/ZAsmt_NC.csv")
+nctrans <- fread("../data_buyouts/ZTrans_NC.csv")
 ```
 
 ```{r import-nfip-claims, include=FALSE}
