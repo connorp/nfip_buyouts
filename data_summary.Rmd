@@ -32,6 +32,7 @@ read_chunk("NFIP_claims_processing.R")
 read_chunk("ztrax_processing.R")
 options(knitr.kable.NA = '')
 panderOptions("digits", 5)
+panderOptions("big.mark", ",")
 panderOptions("table.split.cells", 70)
 panderOptions("table.split.table", 120)
 ```
@@ -56,8 +57,11 @@ This research is built upon two primary data sources: flood insurance claims fil
 
 The NFIP claims data details every claim filed with the NFIP in the state from `r claims[, min(year(dateOfLoss))]` through `r claims[, max(year(dateOfLoss))]` The data include details about the insured property, the insurance coverage, and the loss event and subsequent claim and payout. We discard claims that cover only loss of contents (either due to the policyholder not holding any building coverage, or not submitting a claim for building damage), as well as those with listed payouts that exceed the maximum coverage of $250,000. The table below lists some descriptive statistics for the North Carolina claims data.
 
+<!-- Add a histogram of claims by year and a geographic heatmap of floods/claims -->
+
 ```{r claims-summary, echo=FALSE}
-clsum <- claims[, .(Counties = uniqueN(countyCode), 
+clsum <- claims[, .(claimsCount = .N,
+                 Counties = uniqueN(countyCode), 
                  meanElevation = mean(.SD[abs(elevationDifference) < 20, elevationDifference], 
                                       na.rm = TRUE),
                  fractionElevated = mean(elevatedBuildingIndicator, na.rm = TRUE),
@@ -78,7 +82,7 @@ clsum <- claims[, .(Counties = uniqueN(countyCode),
                  medianYearBuilt = median(year(originalConstructionDate), na.rm = TRUE))]
 clsum <- data.frame(t(clsum))
 colnames(clsum) <- ""
-rownames(clsum) <- c("Number of Counties", "Average Elevation Above Requirement (ft)",
+rownames(clsum) <- c("Number of Claims", "Number of Counties", "Average Elevation Above Requirement (ft)",
                      "Fraction of Claims for Elevated Holes", "Fraction of Claims in SFHA",
                      "Fraction of Claims Post-FIRM Homes", "Average Payout on Building Claim",
                      "Average Building Coverage", "Average Fraction of Building Coverage Paid Out in Claim",
