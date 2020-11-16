@@ -1,0 +1,117 @@
+---
+title: |
+  | Abandon Home All Ye Who Enter Here:
+  | Incentives for and Welfare Impacts of Managed Retreat
+subtitle: Second Year Paper Data Summary
+author: Connor P. Jackson
+date: "November 9, 2020"
+output:
+  pdf_document:
+    fig_caption: yes
+    df_print: !expr pander::pander
+  html_notebook:
+    fig_caption: yes
+    number_sections: yes
+    df_print: !expr pander::pander
+linestretch: 1.1
+fontsize: 11pt
+linkcolor: blue
+urlcolor: blue
+header-includes: \renewcommand{\arraystretch}{1.5}
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+library(pander)
+library(rmarkdown)
+library(demogztrax)
+library(data.table)
+library(sf)
+library(tigris)
+read_chunk("NFIP_claims_processing.R")
+read_chunk("ztrax_processing.R")
+options(knitr.kable.NA = '')
+panderOptions("digits", 5)
+panderOptions("big.mark", ",")
+panderOptions("table.split.cells", 70)
+panderOptions("table.split.table", 120)
+```
+
+<!-- Code chunks to import the data raw from the ZTRAX database -->
+```{r import-ztrax-assessment, include=FALSE, eval=FALSE}
+```
+
+```{r import-ztrax-transactions, include=FALSE, eval=FALSE}
+```
+
+<!-- To restore the data created above without rerunning it, import this csv file -->
+```{r read-ztrax-csv, include=FALSE}
+nchomes <- fread("../data_buyouts/ZAsmt_NC.csv", key="ImportParcelID", index="latest")
+nctrans <- fread("../data_buyouts/ZTrans_NC.csv", key="ImportParcelID")
+```
+
+```{r import-nfip-claims, include=FALSE}
+```
+
+This research is built upon two primary data sources: flood insurance claims filed with the National Flood Insurance Program, and real estate assessment and transaction records from the Zillow ZTRAX dataset. This research will focus on North Carolina, which is one of the primary states covered by NFIP policies and receiving claims. North Carolina was selected based on its high frequency of tropical storms and flooding incidents, complete coverage of digital flood maps, and variation in community characteristics in special flood hazard areas. Much of North Carolina's severe weather comes in the form of large amounts of precipitation and storm surge, rather than damaging winds, which are not covered by the NFIP. In addition, nearly all of North Carolina's counties (including all of its coastal counties) have digitized flood insurance rate maps (FIRMs), which allow us to identify the flood zone of nearly every property in the state. 
+
+The NFIP claims data details every claim filed with the NFIP in the state from `r claims[, min(year(dateOfLoss))]` through `r claims[, max(year(dateOfLoss))]` The data include details about the insured property, the insurance coverage, and the loss event and subsequent claim and payout. We discard claims that cover only loss of contents (either due to the policyholder not holding any building coverage, or not submitting a claim for building damage), as well as those with listed payouts that exceed the maximum coverage of $250,000. The table below lists some descriptive statistics for the North Carolina claims data.
+
+<!-- Add a histogram of claims by year and a geographic heatmap of floods/claims -->
+
+```{r claims-summary, echo=FALSE}
+clsum <- claims[, .(claimsCount = .N,
+                 Counties = uniqueN(countyCode), 
+                 meanElevation = mean(.SD[abs(elevationDifference) < 20, elevationDifference], 
+                                      na.rm = TRUE),
+                 fractionElevated = mean(elevatedBuildingIndicator, na.rm = TRUE),
+                 fractionSFHA = mean(sfha, na.rm = TRUE),
+                 fractionRequiredToElevate = mean(postFIRMConstructionIndicator, na.rm = TRUE),
+                 averageBldgPayout = mean(amountPaidOnBuildingClaim, na.rm = TRUE),
+                 averageBldgCoverage = as.numeric(mean(totalBuildingInsuranceCoverage, na.rm = TRUE)),
+                 averageBldgPayoutFraction = mean(amountPaidOnBuildingClaim / totalBuildingInsuranceCoverage,
+                                              na.rm = TRUE),
+                 averagePayout = mean(amountPaidOnBuildingClaim + amountPaidOnContentsClaim +
+                                        amountPaidOnIncreasedCostOfComplianceClaim, na.rm = TRUE),
+                 averageCoverage = as.numeric(mean(totalBuildingInsuranceCoverage + totalContentsInsuranceCoverage,
+                                        na.rm = TRUE)),
+                 averagePayoutFraction = mean((amountPaidOnBuildingClaim + amountPaidOnContentsClaim +
+                                               amountPaidOnIncreasedCostOfComplianceClaim) /
+                                              (totalBuildingInsuranceCoverage + totalContentsInsuranceCoverage),
+                                              na.rm = TRUE),
+                 medianYearBuilt = median(year(originalConstructionDate), na.rm = TRUE))]
+clsum <- data.frame(t(clsum))
+colnames(clsum) <- ""
+rownames(clsum) <- c("Number of Claims", "Number of Counties", "Average Elevation Above Requirement (ft)",
+                     "Fraction of Claims for Elevated Holes", "Fraction of Claims in SFHA",
+                     "Fraction of Claims Post-FIRM Homes", "Average Payout on Building Claim",
+                     "Average Building Coverage", "Average Fraction of Building Coverage Paid Out in Claim",
+                     "Average Total Payout", "Average Total Coverage", 
+                     "Average Fraction of Coverage Paid out in Claim", "Median Year Built")
+clsum
+```
+
+The [ZTRAX data](https://www.zillow.com/research/ztrax/) are a real estate database of properties comprised of both assessor records and real estate transaction records, compiled into a nationwide database by Zillow. The assessor data include details about the parcel and primary structure, location (street address, census tract, and latitude and longitude), and value (assessed and market values). This table is used to identify our sample of North Carolina homes. We limit our sample to single family homes, excluding rural residences (homes on productive agricultural land) as well as condominums and similar structures. Assessment data are available from `r nchomes[, min(year(record_date))]` through `r nchomes[, max(year(record_date))]`.
+
+The transaction data then contains information about every real estate transaction recorded for the parcels in the assessor data. The records include the date and type of transaction, information about the buyer, seller, and lender, if applicable, sale price and any taxes, and mortgage information. We will use these data to identify home sales in the wake of a flood. Transaction data are available for transactions from `r nctrans[, min(year(RecordingDate), na.rm = TRUE)]` through `r nctrans[, max(year(RecordingDate), na.rm = TRUE)]`.
+
+The table below lists some descriptive statistics for the combined assessor and transaction records. The average assessed and market values are reported in nominal dollars in the most recent year of observation, which for nearly every property is either 2013 or 2014.
+
+```{r ztrax-assessor-summary, echo=FALSE}
+nchomes[nctrans[!is.na(ImportParcelID), .N, keyby = .(ImportParcelID)], numTransactions := N]
+asmtsum <- nchomes[, .(number_homes = uniqueN(ImportParcelID), 
+                    medianYearBuilt = round(median(.SD[latest == TRUE, YearBuilt], na.rm = TRUE), 0),
+                    averageAssessedValue = mean(.SD[latest == TRUE, TotalAssessedValue], na.rm = TRUE),
+                    averageMarketValue = mean(.SD[latest == TRUE, TotalMarketValue], na.rm = TRUE),
+                    averageNumberTransactions = mean(.SD[latest == TRUE, numTransactions], na.rm = TRUE))]
+asmtsum <- data.frame(t(asmtsum))
+colnames(asmtsum) <- ""
+rownames(asmtsum) <- c("Number of Homes", "Median Year Built", "Average Assessed Value",
+                       "Average Market Value", "Average Number of Transactions Observed")
+asmtsum
+```
+
+There are a few data issues that will need to be handled carefully in our estimation strategy. The primary limitation is that policy claims are not identifiable down to the specific address level due to federal privacy regulations. We can match homes to NFIP policies only at the census tract level. While parcel level matching would be ideal for this research, even matches at the census tract level will provide insight into the behavior of homeowners before and after a flood event. 
+
+The ZTRAX data are pulled from nationwide county public records whose quality and fidelity vary widely. As a result, there are some additional data availability and quality issues that will need to be handled. First, there are several flood-relevant house attributes we do not observe for homes without flood insurance: namely the base elevation of the home. In addition, many housing transactions do not occur at the full market price, such as transfers between family members. These transfers will need to be identified and handled separately. Finally, both market and assessed values of homes are updated only periodically, and thus may not reflect the true value of a home at any given time.
+
