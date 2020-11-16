@@ -3,23 +3,27 @@
 ## Exploratory code: FEMA National Flood Insurance Program
 
 library(data.table)
-library(jsonlite)
 library(httr)
-library(crul)
-library(parallel)
+library(jsonlite)
 
 policies_path <- "https://www.fema.gov/api/open/v1/FimaNfipPolicies"
 claims_path <- "https://www.fema.gov/api/open/v1/FimaNfipClaims"
 
+
 query_FEMA_API <- function(API_url, columns = NULL, rowfilter = NULL, perQuery = 1000,
-                           queryCap = NULL, times = 5) {
-  # First find out how long the data are
-  initial_resp <- httr::GET(url = API_url,
-                            query = list(`$inlinecount` = 'allpages',
-                                         `$top` = 1,
-                                         `$filter` = rowfilter))
-  parsed_result <- jsonlite::fromJSON(httr::content(initial_resp, as = "text"))
-  N <- parsed_result$metadata$count
+                           queryCap = NULL, queryN = FALSE) {
+  if (queryN == TRUE) {
+    # First find out how long the data are
+    initial_resp <- httr::GET(url = API_url,
+                              query = list(`$inlinecount` = 'allpages',
+                                           `$top` = 1,
+                                           `$filter` = rowfilter))
+    parsed_result <- jsonlite::fromJSON(httr::content(initial_resp, as = "text"))
+    N <- parsed_result$metadata$count
+    print(N)
+  } else{
+    N <- 1629168
+  }
 
   # If we don't want to pull the full table
   if (!is.null(queryCap)) {
@@ -33,7 +37,8 @@ query_FEMA_API <- function(API_url, columns = NULL, rowfilter = NULL, perQuery =
                                   query = list(`$skip` = skipN,
                                                `$filter` = rowfilter,
                                                `$select` = columns,
-                                               `$top` = perQuery))
+                                               `$top` = perQuery,
+                                               `$format` = "csv"))
     return(final_url)
   }
 
@@ -41,41 +46,22 @@ query_FEMA_API <- function(API_url, columns = NULL, rowfilter = NULL, perQuery =
   page_indices <- seq(from = 0, to = N, by = perQuery)
   query_urls <- sapply(page_indices, assemble_url)
 
-  # Query the URLs asynchronously
-  Async_client <- Async$new(urls = query_urls)
+  topchunk <- httr::GET(query_urls[1])
+  toptable <- fread(text=httr::content(topchunk, as = "text"), na.strings = "")
+  col_names <- names(toptable)
 
-  query_results <- list()
+  # Start a CSV file with column headers and nothing else
+  write(paste(col_names, collapse = ","), "../data_buyouts/policies.csv")
 
-  for (i in 1:times) {
-    # a retry loop for getting failed pages of the API
-
-    # Send the GET request
-    query_responses <- Async_client$get()
-
-    # Identify the queries that succeeded
-    query_success <- sapply(query_responses, function(z) z$success())
-
-    # save the successful queries
-    query_results <- append(query_results, query_responses[query_success])
-
-    # Identify the failed queries, prepare to reissue them
-    query_urls <- query_urls[!query_success]
-    Async_client$urls <- query_urls
-
-    # We are done if no queries failed
-    if (length(query_urls) == 0) break
-
-    # otherwise, wait an exponential decay time (with jitter) and retry the failed ones
-    Sys.sleep(stats::runif(1, min = 1, max = min(2^i, 60)))
+  query_and_read <- function(url) {
+    query_resp <- httr::GET(url)
+    # Sys.sleep(stats::runif(1, min = 1, max = min(2^i, 60)))
+    res_table <- fread(text=httr::content(query_resp, as = "text"), na.strings = "")
+    fwrite(res_table[, ..col_names], "../data_buyouts/policies.csv", append=TRUE)
   }
 
-  parse_query <- function(query_result) {
-    query_outputs <- jsonlite::fromJSON(query_result$parse("UTF-8"))
-    # Need to get the name of the two attributes, and use the second one
-    tablename <- names(query_outputs)[2]
-    return(query_outputs[[tablename]])
-  }
-
-  outtable <- rbindlist(mclapply(query_results, parse_query, mc.cores = 3), fill = TRUE)
-  return(outtable)
+  lapply(query_urls, query_and_read)
 }
+
+query_FEMA_API(policies_path, rowfilter = "propertyState eq 'NC'")
+
