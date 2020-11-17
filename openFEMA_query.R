@@ -60,6 +60,8 @@ query_FEMA_API <- function(API_url, outfile, columns = NULL, rowfilter = NULL,
   }
 
   lapply(query_urls, query_and_read)
+
+  # TODO: Write out a text file with the name of the API, the call, and the query
 }
 
 query_FEMA_API(policies_path, "../data_buyouts/policies.csv",

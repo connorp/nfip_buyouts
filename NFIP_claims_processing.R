@@ -29,6 +29,12 @@ claims <- assemble_claims(state="NC")
 claims[abs(elevationDifference) == 999, elevationDifference := NA]
 claims[, sfha := grepl("A|V", floodZone)]
 
+## ---- import-nfip-policies ----
+
+policies <- fread("../data_buyouts/policies.csv")
+
+# dates: policyEffectiveDate, originalNBDate, policyTerminationDate, (cancellationDateOfFloodPolicy)
+
 ## ---- import-NFHL-zones ----
 
 # nfhl_layers <- st_layers("../nfip_data/NFHL/NFHL_48_20201014.gdb")
