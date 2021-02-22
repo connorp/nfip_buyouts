@@ -5,6 +5,7 @@
 library(data.table)
 library(lubridate)
 library(demogztrax)
+library(ggmap)
 
 ## ---- import-ztrax-assessment ----
 ZAsmt_struct <- demogztrax::layout_spec$Zillow_Assessor.ZAsmt
@@ -43,6 +44,18 @@ nchomes[PropertyFullStreetAddress == "", PropertyFullStreetAddress := NA]
 nchomes[PropertyCity == "", PropertyCity := NA]
 nchomes[PropertyAddressCensusTractAndBlock == "", PropertyAddressCensusTractAndBlock := NA]
 
+# # Handle the missing LatLongs for some entries
+# # Make sure the Google API key is set
+# register_google(Sys.getenv("GOOGLE_API"))
+#
+# # Geocode the cluster locations we only have addresses for (convert address to lat/long)
+# nchomes[(!is.na(PropertyFullStreetAddress) & !is.na(PropertyCity) & !is.na(PropertyZip) & is.na(PropertyAddressLatitude)),
+#         c("longitude", "latitude") := geocode(paste(PropertyFullStreetAddress, PropertyCity, "NC", PropertyZip))]
+#
+
+## TODO: Geocode the ~30% of listings which are not geocoded, or match from other
+##       records for that parcel
+
 fwrite(nchomes, "../data_buyouts/ZAsmt_NC.csv")
 
 # Census tract format: 2 digit state + 3 digit county +
@@ -51,7 +64,7 @@ fwrite(nchomes, "../data_buyouts/ZAsmt_NC.csv")
 ## ---- import-ztrax-transactions ----
 Ztrans_struct <- demogztrax::layout_spec$Zillow_Transaction.ZTrans
 
-cols_trans <- c(1,2,5,7,17,18,25,27:32,60:63,66,68,102)
+cols_trans <- c(1,2,5:7,17,18,25:32,60:63,66,68,102)
 colnames_trans <- Ztrans_struct[TableName == "utMain" & column_id %in% cols_trans, FieldName]
 colnames_trans <- c(colnames_trans, "ImportParcelID")
 trans_files <- c("utMain", "utPropertyInfo")
@@ -63,7 +76,8 @@ for (table in names(nctrans)) setkey(nctrans[[table]], TransId, FIPS)
 
 nctrans <- merge(nctrans$Main.txt, nctrans$PropertyInfo.txt, all.x = TRUE)
 
+### TODO: handle transactions missing ImportParcelID
 nctrans <- nctrans[ImportParcelID %in% nchomes[, ImportParcelID]]
-# Will need to identify transactions that lack ImportParcelID
+# Implicitly drops all transactions missing ImportParcelID
 
 fwrite(nctrans, "../data_buyouts/ZTrans_NC.csv")

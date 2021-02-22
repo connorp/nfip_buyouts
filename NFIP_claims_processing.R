@@ -37,5 +37,8 @@ policies <- fread("../data_buyouts/policies.csv")
 
 ## ---- import-NFHL-zones ----
 
-# nfhl_layers <- st_layers("../nfip_data/NFHL/NFHL_48_20201014.gdb")
-# nfhl <- sf::st_read("../nfip_data/NFHL/NFHL_48_20201014.gdb", "S_Fld_Haz_Ar")
+nfhl <- sf::st_read("../data_buyouts/NFHL/NFHL_37_20201206.gdb", "S_Fld_Haz_Ar")
+
+# keep only the needed columns
+nfhl_cols <- c("DFIRM_ID", "FLD_AR_ID", "FLD_ZONE", "SFHA_TF", "STATIC_BFE", "DEPTH", "LEN_UNIT", "SHAPE")
+nfhl <- nfhl[nfhl_cols]
