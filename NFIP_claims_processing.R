@@ -27,7 +27,11 @@ assemble_claims <-function(path="../data_buyouts/FimaNfipClaims.csv", state=NULL
 
 claims <- assemble_claims(state="NC")
 claims[abs(elevationDifference) == 999, elevationDifference := NA]
+claims[, floodZone := as.character(floodZone)]
 claims[, sfha := grepl("A|V", floodZone)]
+claims[censusTract < 37000000000, censusTract := NA]
+claims <- claims[!is.na(censusTract)]
+# todo: attempt to recreate missing census tracts from zipcodes/latLongs
 
 ## ---- import-nfip-policies ----
 

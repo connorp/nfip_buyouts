@@ -58,9 +58,6 @@ nchomes[PropertyAddressCensusTractAndBlock == "", PropertyAddressCensusTractAndB
 
 fwrite(nchomes, "../data_buyouts/ZAsmt_NC.csv")
 
-# Census tract format: 2 digit state + 3 digit county +
-# 6 digit tract (maybe containing a decimal) + 4 digit block
-
 ## ---- import-ztrax-transactions ----
 Ztrans_struct <- demogztrax::layout_spec$Zillow_Transaction.ZTrans
 
