@@ -36,6 +36,15 @@ claims <- claims[!is.na(censusTract)]
 ## ---- import-nfip-policies ----
 
 policies <- fread("../data_buyouts/policies.csv")
+policies[censusTract < 37000000000 | censusTract >= 38000000000, censusTract := NA]
+policies <- policies[!is.na(censusTract) & occupancyType == 1 &
+                     totalBuildingInsuranceCoverage > 0 & totalBuildingInsuranceCoverage <= 250000]
+policies[, originalConstructionDate := year(originalConstructionDate)]
+policies[originalConstructionDate > year(Sys.time()), originalConstructionDate := NA]
+policies <- policies[!is.na(originalConstructionDate)]
+policies[, policyyear := year(policyEffectiveDate)]
+policies[elevationDifference < -100 | elevationDifference > 200, elevationDifference := NA]
+policies[, sfha := grepl("A|V", floodZone)]
 
 # dates: policyEffectiveDate, originalNBDate, policyTerminationDate, (cancellationDateOfFloodPolicy)
 
