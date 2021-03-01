@@ -43,6 +43,7 @@ policies[, originalConstructionDate := year(originalConstructionDate)]
 policies[originalConstructionDate > year(Sys.time()), originalConstructionDate := NA]
 policies <- policies[!is.na(originalConstructionDate)]
 policies[, policyyear := year(policyEffectiveDate)]
+policies <- policies[policyyear < year(Sys.time())]  # drop the handful of 2021 policies
 policies[elevationDifference < -100 | elevationDifference > 200, elevationDifference := NA]
 policies[, sfha := grepl("A|V", floodZone)]
 
