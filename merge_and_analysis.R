@@ -122,10 +122,13 @@ nctrans_panel <- sfha_homes[nctrans_panel, roll = TRUE, rollends = TRUE]
 flood_frame <- CJ(tract_zone = unique(c(sfha_homes[, unique(paste(censusTract, FLD_ZONE, sep="_"))],
                                          claims[sfha == TRUE, unique(paste(censusTract, floodZone, sep="_"))])),
                   year = claims[, unique(year(yearofLoss))])
+
 flood_count <- claims[sfha == TRUE, .N, by = .(censusTract, floodZone, year = year(yearofLoss))]
 flood_count[, tract_zone := paste(censusTract, floodZone, sep="_")]
 setkey(flood_count, tract_zone, year)
+
 flood_panel <- merge(flood_count, flood_frame, all = TRUE)
+
 rm(flood_count, flood_frame)
 flood_panel[is.na(N), N := 0]
 flood_panel[, flood_event := N > 0]
@@ -134,9 +137,16 @@ flood_panel[, flood_event := N > 0]
 policies_frame <- CJ(tract_zone_year = unique(c(sfha_homes[, unique(paste(censusTract, FLD_ZONE, YearBuilt, sep="_"))],
                                                 policies[sfha == TRUE, unique(paste(censusTract, floodZone, originalConstructionDate, sep="_"))])),
                      year = policies[, unique(policyyear)])
-policies_status <- policies[sfha == TRUE, .N, by = .(censusTract, floodZone, originalConstructionDate, year = policyyear)]
+
+policies_status <- policies[sfha == TRUE, .(.N, postFIRM = (mean(postFIRMConstructionIndicator) > 0.5)),
+                            by = .(censusTract, floodZone, originalConstructionDate, year = policyyear)]
 policies_status[, tract_zone_year := paste(censusTract, floodZone, originalConstructionDate, sep="_")]
 setkey(policies_status, tract_zone_year, year)
+
 policies_panel <- merge(policies_status, policies_frame, all = TRUE)
 rm(policies_frame, policies_status)
+
+## ---- combine-panels ----
+
+
 
