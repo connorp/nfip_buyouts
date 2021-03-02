@@ -138,14 +138,15 @@ flood_frame <- CJ(tract_zone = unique(c(sfha_homes[, unique(paste(censusTract, F
                                          claims[sfha == TRUE, unique(paste(censusTract, floodZone, sep="_"))])),
                   year = claims[, unique(year(yearofLoss))])
 
-flood_count <- claims[sfha == TRUE, .(flood_count = .N), by = .(censusTract, floodZone, year = year(yearofLoss))]
-flood_count[, tract_zone := paste(censusTract, floodZone, sep="_")]
+flood_count <- claims[sfha == TRUE, .(flood_count = .N), by = .(tract_zone = paste(censusTract, floodZone, sep="_"),
+                                                                year = year(yearofLoss))]
 setkey(flood_count, tract_zone, year)
 
 flood_panel <- merge(flood_count, flood_frame, all = TRUE)
 
 rm(flood_count, flood_frame)
-flood_panel[is.na(flood_count), c("censusTract", "floodZone") := tstrsplit(tract_zone, "_", fixed = TRUE)]
+flood_panel[, c("censusTract", "floodZone") := tstrsplit(tract_zone, "_", fixed = TRUE, type.convert = TRUE)]
+flood_panel[, censusTract := as.integer64(censusTract)]
 flood_panel[is.na(flood_count), flood_count := 0]
 flood_panel[, flood_event := flood_count > 0]
 flood_panel[, tract_zone := NULL]
@@ -156,18 +157,19 @@ policies_frame <- CJ(tract_zone_year = unique(c(sfha_homes[, unique(paste(census
                      year = policies[, unique(policyyear)])
 
 policies_status <- policies[sfha == TRUE, .(policies_count = .N, postFIRM = (mean(postFIRMConstructionIndicator) > 0.5)),
-                            by = .(censusTract, floodZone, originalConstructionDate, year = policyyear)]
-policies_status[, tract_zone_year := paste(censusTract, floodZone, originalConstructionDate, sep="_")]
+                            by = .(tract_zone_year = paste(censusTract, floodZone, originalConstructionDate, sep="_"),
+                                   year = policyyear)]
 setkey(policies_status, tract_zone_year, year)
 
 policies_panel <- merge(policies_status, policies_frame, all = TRUE)
-policies_panel[is.na(policies_count), c("censusTract", "floodZone", "
-                                        originalConstructionDate") := tstrsplit(tract_zone_year, "_", fixed = TRUE)]
+policies_panel[, c("censusTract", "floodZone", "originalConstructionDate") := tstrsplit(tract_zone_year,
+                                                                                        "_", fixed = TRUE, type.convert = TRUE)]
 policies_panel[, tract_zone_year := NULL]
+policies_panel[, censusTract := as.integer64(censusTract)]
 policies_panel[is.na(policies_count), policies_count := 0]
 rm(policies_frame, policies_status)
 
-# TODO: Find other data on year of initial FIRM
+# TODO: Find other data on year of initial FIRM (and maybe CRS class as well?)
 FIRMdates <- policies_panel[postFIRM == TRUE, .(FIRMyear = min(originalConstructionDate, na.rm = TRUE)),
                             keyby = .(censusTract, floodZone)]
 FIRMdates[FIRMyear < 1974, FIRMyear := 1974]
@@ -188,6 +190,9 @@ tzy_panel <- merge(tzy_panel, FIRMdates, by = c("censusTract", "floodZone"), all
 setkey(tzy_panel, censusTract, floodZone, YearBuilt, year)
 
 tzy_panel[, policy_prob := policies_count / properties_count]
+tzy_panel[, adapted := YearBuilt > FIRMyear]
+tzy_panel[YearBuilt < 1974, adapted := FALSE]
+tzy_panel[YearBuilt == FIRMyear, adapted := NA]  # ambiguous within-year FIRM timing
 
 # Create the lag flood policy and flood events data
 tzy_panel[, policies_L1 := shift(policies_count, 1, type = "lag"), by = .(censusTract, floodZone, YearBuilt)]
@@ -200,4 +205,8 @@ tzy_panel[, policy_prob_L1 := policies_L1 / properties_count]
 tzy_panel[, policy_prob_L2 := policies_L2 / properties_count]
 tzy_panel[, policy_prob_L3 := policies_L3 / properties_count]
 
+## ---- event-study
+
+# tractable instruments: legislative changes (2014 x adapted)
 # year range: 2009-2016 (2017 is only thru September)
+tzy_panel[, in_sample := ((year %in% 2009:2016) & !is.na(adapted))]

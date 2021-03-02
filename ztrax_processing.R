@@ -13,6 +13,7 @@ ZAsmt_struct <- demogztrax::layout_spec$Zillow_Assessor.ZAsmt
 cols_main <- c(1:3,5:8,27,28,30,82:84)
 colnames_main <- ZAsmt_struct[TableName == "utMain" & column_id %in% cols_main, FieldName]
 
+# TODO: add number of stories
 cols_building <- c(1,6,15,16,46)
 colnames_bldg <- ZAsmt_struct[TableName == "utBuilding" & column_id %in% cols_building, FieldName]
 
