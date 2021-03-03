@@ -17,18 +17,6 @@ nchomes <- fread("../data_buyouts/ZAsmt_NC.csv", key="ImportParcelID", index="la
 nctrans <- fread("../data_buyouts/ZTrans_NC.csv", key="ImportParcelID", na.strings = "")
 source("NFIP_claims_processing.R")
 
-## ----apply-NFHL ----
-
-### TODO: Geocode missing latlongs
-# Can't assign a flood zone without Lat/Long
-nchomes <- nchomes[!is.na(PropertyAddressLatitude)]
-
-# Census tract format: 2 digit state + 3 digit county +
-# 6 digit tract (maybe containing a decimal) + 4 digit block
-# Remove obviously incorrect census blocks and fix formatting
-nchomes[!grepl("^37", PropertyAddressCensusTractAndBlock), PropertyAddressCensusTractAndBlock := NA]
-nchomes[nchar(PropertyAddressCensusTractAndBlock) < 10, PropertyAddressCensusTractAndBlock := NA]
-nchomes[, censusTract := as.integer64(gsub(".", "", substring(PropertyAddressCensusTractAndBlock, 1, 12), fixed = TRUE))]
 nchomes <- nchomes[!is.na(censusTract)]
 # TODO: recreate missing census tracts from zipcodes or latlongs
 
@@ -38,33 +26,6 @@ nchomes[EffectiveYearBuilt > year(Sys.time()), EffectiveYearBuilt := NA]
 nchomes[is.na(EffectiveYearBuilt), EffectiveYearBuilt := YearBuilt]
 nchomes[is.na(YearBuilt), YearBuilt := EffectiveYearBuilt]
 nchomes <- nchomes[!is.na(YearBuilt)]
-
-# Create a geometry file of the parcel locations so we can match to flood zones
-nchomes_shp <- st_as_sf(nchomes[latest==TRUE, .(ImportParcelID, PropertyAddressLongitude, PropertyAddressLatitude)],
-                        coords = c("PropertyAddressLongitude", "PropertyAddressLatitude"))
-st_crs(nchomes_shp) <- st_crs(nfhl)
-
-# Match to flood zones
-nchomes_fldzn <- st_join(nchomes_shp, nfhl)
-setDT(nchomes_fldzn, key="ImportParcelID")
-
-nchomes_fldzn[STATIC_BFE == -9999, STATIC_BFE := NA]
-nchomes_fldzn[DEPTH == -9999, DEPTH := NA]
-nchomes_fldzn[FLD_ZONE == "AREA NOT INCLUDED", FLD_ZONE := NA]
-
-setorder(nchomes_fldzn, ImportParcelID, FLD_ZONE)
-
-# As long as the flood zones are the same in the overlapping polygons, we don't care
-nchomes_fldzn <- unique(nchomes_fldzn, by=c("ImportParcelID", "FLD_ZONE"))
-
-### TODO: Handle overlapping flood zones better
-# if there are duplicate flood zones, take the higher one
-nchomes_fldzn <- unique(nchomes_fldzn, by="ImportParcelID", fromLast=FALSE)
-
-# merge flood zone data back onto assessor data
-nchomes <- merge(nchomes, nchomes_fldzn, by = "ImportParcelID", all.x = TRUE)
-rm(nchomes_fldzn)
-nchomes[, SFHA_TF := SFHA_TF == "T"]
 
 ## Handle multiple assessment records in a year. Keep the most recent one
 nchomes[, record_date := my(ExtractDate)]
@@ -205,15 +166,19 @@ setorder(tzy_panel, censusTract, floodZone, YearBuilt, year)
 tzy_panel[, policies_L1 := shift(policies_count, 1, type = "lag"), by = .(censusTract, floodZone, YearBuilt)]
 tzy_panel[, policies_L2 := shift(policies_count, 2, type = "lag"), by = .(censusTract, floodZone, YearBuilt)]
 tzy_panel[, policies_L3 := shift(policies_count, 3, type = "lag"), by = .(censusTract, floodZone, YearBuilt)]
+tzy_panel[, policies_F1 := shift(policies_count, 1, type = "lead"), by = .(censusTract, floodZone, YearBuilt)]
 tzy_panel[, flood_L1 := shift(flood_event, 1, type = "lag"), by = .(censusTract, floodZone, YearBuilt)]
 tzy_panel[, flood_L2 := shift(flood_event, 2, type = "lag"), by = .(censusTract, floodZone, YearBuilt)]
 tzy_panel[, flood_L3 := shift(flood_event, 3, type = "lag"), by = .(censusTract, floodZone, YearBuilt)]
+tzy_panel[, flood_F1 := shift(flood_event, 1, type = "lead"), by = .(censusTract, floodZone, YearBuilt)]
 tzy_panel[, policy_prob_L1 := policies_L1 / properties_count]
 tzy_panel[, policy_prob_L2 := policies_L2 / properties_count]
 tzy_panel[, policy_prob_L3 := policies_L3 / properties_count]
+tzy_panel[, policy_prob_F1 := policies_F1 / properties_count]
 tzy_panel[, reg_reform_L1 := shift(reg_reform, 1, type = "lag"), by = .(censusTract, floodZone, YearBuilt)]
 tzy_panel[, reg_reform_L2 := shift(reg_reform, 2, type = "lag"), by = .(censusTract, floodZone, YearBuilt)]
 tzy_panel[, reg_reform_L3 := shift(reg_reform, 3, type = "lag"), by = .(censusTract, floodZone, YearBuilt)]
+tzy_panel[, reg_reform_F1 := shift(reg_reform, 1, type = "lead"), by = .(censusTract, floodZone, YearBuilt)]
 
 # tractable instruments: legislative changes (2013 x adapted)
 # year range: 2009-2016 (2017 is only thru September) (2012-2016 with lags)

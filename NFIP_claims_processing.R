@@ -48,11 +48,3 @@ policies[elevationDifference < -100 | elevationDifference > 200, elevationDiffer
 policies[, sfha := grepl("A|V", floodZone)]
 
 # dates: policyEffectiveDate, originalNBDate, policyTerminationDate, (cancellationDateOfFloodPolicy)
-
-## ---- import-NFHL-zones ----
-
-nfhl <- sf::st_read("../data_buyouts/NFHL/NFHL_37_20201206.gdb", "S_Fld_Haz_Ar")
-
-# keep only the needed columns
-nfhl_cols <- c("DFIRM_ID", "FLD_AR_ID", "FLD_ZONE", "SFHA_TF", "STATIC_BFE", "DEPTH", "LEN_UNIT", "SHAPE")
-nfhl <- nfhl[nfhl_cols]
