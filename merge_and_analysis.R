@@ -9,7 +9,6 @@ library(tidyr)
 library(sf)
 library(DescTools)
 library(tidycensus)
-library(plm)
 
 ## ---- import-data ----
 
@@ -117,6 +116,8 @@ flood_panel[is.na(flood_count), flood_count := 0]
 flood_panel[, flood_event := flood_count > 0]
 flood_panel[, tract_zone := NULL]
 
+## TODO: change years to start in August or at the start of flood season?
+
 ## ---- nfip-policy-holders ----
 policies_frame <- CJ(tract_zone_year = unique(c(sfha_homes[, unique(paste(censusTract, FLD_ZONE, YearBuilt, sep="_"))],
                                                 policies[sfha == TRUE, unique(paste(censusTract, floodZone, originalConstructionDate, sep="_"))])),
@@ -203,4 +204,3 @@ tzy_panel[panel_id %in% bad_tracts, in_sample := FALSE]
 #               "C18108_002", "C18130_002")
 # acs_2009 <- get_acs(geography = "tract", variables = acs_vars, state = "NC", moe = 95,
 #                     year = 2009, survey = "acs5")
-
