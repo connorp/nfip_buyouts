@@ -8,6 +8,8 @@ library(lubridate)
 library(tidyr)
 library(sf)
 library(DescTools)
+library(tidycensus)
+library(plm)
 
 ## ---- import-data ----
 
@@ -193,8 +195,10 @@ tzy_panel[, policy_prob := policies_count / properties_count]
 tzy_panel[, adapted := YearBuilt > FIRMyear]
 tzy_panel[YearBuilt < 1974, adapted := FALSE]
 tzy_panel[YearBuilt == FIRMyear, adapted := NA]  # ambiguous within-year FIRM timing
+tzy_panel[, reg_reform := year >= 2013]
 
 # Create the lag flood policy and flood events data
+setorder(tzy_panel, censusTract, floodZone, YearBuilt, year)
 tzy_panel[, policies_L1 := shift(policies_count, 1, type = "lag"), by = .(censusTract, floodZone, YearBuilt)]
 tzy_panel[, policies_L2 := shift(policies_count, 2, type = "lag"), by = .(censusTract, floodZone, YearBuilt)]
 tzy_panel[, policies_L3 := shift(policies_count, 3, type = "lag"), by = .(censusTract, floodZone, YearBuilt)]
@@ -204,9 +208,35 @@ tzy_panel[, flood_L3 := shift(flood_event, 3, type = "lag"), by = .(censusTract,
 tzy_panel[, policy_prob_L1 := policies_L1 / properties_count]
 tzy_panel[, policy_prob_L2 := policies_L2 / properties_count]
 tzy_panel[, policy_prob_L3 := policies_L3 / properties_count]
+tzy_panel[, reg_reform_L1 := shift(reg_reform, 1, type = "lag"), by = .(censusTract, floodZone, YearBuilt)]
+tzy_panel[, reg_reform_L2 := shift(reg_reform, 2, type = "lag"), by = .(censusTract, floodZone, YearBuilt)]
+tzy_panel[, reg_reform_L3 := shift(reg_reform, 3, type = "lag"), by = .(censusTract, floodZone, YearBuilt)]
 
-## ---- event-study
+# tractable instruments: legislative changes (2013 x adapted)
+# year range: 2009-2016 (2017 is only thru September) (2012-2016 with lags)
+tzy_panel[, in_sample := ((year %in% 2009:2016) & !is.na(adapted) & YearBuilt < 2009)]
+tzy_panel[, panel_id := paste(censusTract, floodZone, YearBuilt, sep="_")]
+tzy_panel[, censusTract := as.character(censusTracts)]
 
-# tractable instruments: legislative changes (2014 x adapted)
-# year range: 2009-2016 (2017 is only thru September)
-tzy_panel[, in_sample := ((year %in% 2009:2016) & !is.na(adapted))]
+## ---- census-data ----
+
+# v2009 <- load_variables(2009, "acs1", cache = TRUE)
+# v2009_5 <- load_variables(2009, "acs5", cache = TRUE)
+#
+# acs_vars <- c("B01001_002", "B01002_001", "B01003_001", "B02001_002", "B02001_003", "B03001_003",
+#               "B17001_002", "B06011_001", "C18108_010", "C18130_016",
+#               "C18108_002", "C18130_002")
+# acs_2009 <- get_acs(geography = "tract", variables = acs_vars, state = "NC", moe = 95,
+#                     year = 2009, survey = "acs5")
+
+## ---- event-study ----
+
+# TODO: Fix the handful of inconsistencies when aggregating nctrans_panel up to tzy_panel
+# tzy_panel[in_sample == TRUE, .N, keyby = .(is.na(policies_L3), year)]
+
+ols_res <- plm(transaction_prob ~ flood_event * policy_prob + flood_L1 * policy_prob_L1
+                                  + flood_L2 * policy_prob_L2 + flood_L3 * policy_prob_L3
+                                  | flood_event * reg_reform_L1:adapted + flood_L1:reg_reform_L1
+                                    + flood_L2 * reg_reform_L2:adapted + flood_L3 * reg_reform_L3:adapted,
+               data = tzy_panel[in_sample == TRUE], model = "within", index = c("panel_id", "year"))
+summary(ols_res)
