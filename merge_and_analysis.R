@@ -216,7 +216,7 @@ tzy_panel[, reg_reform_L3 := shift(reg_reform, 3, type = "lag"), by = .(censusTr
 # year range: 2009-2016 (2017 is only thru September) (2012-2016 with lags)
 tzy_panel[, in_sample := ((year %in% 2009:2016) & !is.na(adapted) & YearBuilt < 2009)]
 tzy_panel[, panel_id := paste(censusTract, floodZone, YearBuilt, sep="_")]
-tzy_panel[, censusTract := as.character(censusTracts)]
+tzy_panel[, censusTract := as.character(censusTract)]
 
 ## ---- census-data ----
 
