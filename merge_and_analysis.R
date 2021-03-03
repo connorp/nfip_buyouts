@@ -74,14 +74,17 @@ nchomes <- unique(nchomes, by=c("ImportParcelID", "record_year"), fromLast=TRUE)
 
 sfha_homes <- nchomes[SFHA_TF == TRUE]
 
-tract_mode <- function(tracts) {
-  if (length(tracts) == uniqueN(tracts)) return(tail(tracts, n = 1))
-  return(tail(Mode(tracts), n = 1))
+modal_val <- function(confusingVar) {
+  if (length(confusingVar) == uniqueN(confusingVar)) return(tail(confusingVar, n = 1))
+  return(tail(Mode(confusingVar), n = 1))
 }
 
 ## TODO: handle changes in census tracts better
 ## If a house is listed in different tracts in different years, take the modal tract. For ties, take the later
-sfha_homes[, censusTract := as.integer64(tract_mode(as.numeric(as.character(censusTract)))), by = .(ImportParcelID)]
+sfha_homes[, censusTract := as.integer64(modal_val(as.numeric(as.character(censusTract)))), by = .(ImportParcelID)]
+# Do the same thing for year built
+sfha_homes[, YearBuilt := modal_val(YearBuilt), by = .(ImportParcelID)]
+sfha_homes[, EffectiveYearBuilt := modal_val(EffectiveYearBuilt), by = .(ImportParcelID)]
 
 ## ---- CH-create-property-long-data ----
 
@@ -218,6 +221,10 @@ tzy_panel[, in_sample := ((year %in% 2009:2016) & !is.na(adapted) & YearBuilt < 
 tzy_panel[, panel_id := paste(censusTract, floodZone, YearBuilt, sep="_")]
 tzy_panel[, censusTract := as.character(censusTract)]
 
+# TODO: figure out issue with policies exceeding properties
+bad_tracts <- tzy_panel[in_sample == TRUE & policies_count > properties_count, unique(panel_id)]
+tzy_panel[panel_id %in% bad_tracts, in_sample := FALSE]
+
 ## ---- census-data ----
 
 # v2009 <- load_variables(2009, "acs1", cache = TRUE)
@@ -236,7 +243,13 @@ tzy_panel[, censusTract := as.character(censusTract)]
 
 ols_res <- plm(transaction_prob ~ flood_event * policy_prob + flood_L1 * policy_prob_L1
                                   + flood_L2 * policy_prob_L2 + flood_L3 * policy_prob_L3
-                                  | flood_event * reg_reform_L1:adapted + flood_L1:reg_reform_L1
+                                  | flood_event * reg_reform:adapted + flood_L1 * reg_reform_L1:adapted
                                     + flood_L2 * reg_reform_L2:adapted + flood_L3 * reg_reform_L3:adapted,
-               data = tzy_panel[in_sample == TRUE], model = "within", index = c("panel_id", "year"))
-summary(ols_res)
+               data = tzy_panel[in_sample == TRUE], model = "within", index = c("panel_id", "year"), effect = "twoways")
+summary(ols_res, vcov=vcovHC(ols_res, type="HC1"))
+
+
+# a rough test of the first stage
+testols <- glm(policy_prob ~ flood_event * reg_reform * adapted + year, data = tzy_panel[in_sample == TRUE], family = binomial("probit"))
+summary(testols)
+
