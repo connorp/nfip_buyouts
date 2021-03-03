@@ -225,6 +225,9 @@ tzy_panel[, censusTract := as.character(censusTract)]
 bad_tracts <- tzy_panel[in_sample == TRUE & policies_count > properties_count, unique(panel_id)]
 tzy_panel[panel_id %in% bad_tracts, in_sample := FALSE]
 
+# TODO: Fix the handful of inconsistencies when aggregating nctrans_panel up to tzy_panel
+# tzy_panel[in_sample == TRUE, .N, keyby = .(is.na(policies_L3), year)]
+
 ## ---- census-data ----
 
 # v2009 <- load_variables(2009, "acs1", cache = TRUE)
@@ -235,21 +238,4 @@ tzy_panel[panel_id %in% bad_tracts, in_sample := FALSE]
 #               "C18108_002", "C18130_002")
 # acs_2009 <- get_acs(geography = "tract", variables = acs_vars, state = "NC", moe = 95,
 #                     year = 2009, survey = "acs5")
-
-## ---- event-study ----
-
-# TODO: Fix the handful of inconsistencies when aggregating nctrans_panel up to tzy_panel
-# tzy_panel[in_sample == TRUE, .N, keyby = .(is.na(policies_L3), year)]
-
-ols_res <- plm(transaction_prob ~ flood_event * policy_prob + flood_L1 * policy_prob_L1
-                                  + flood_L2 * policy_prob_L2 + flood_L3 * policy_prob_L3
-                                  | flood_event * reg_reform:adapted + flood_L1 * reg_reform_L1:adapted
-                                    + flood_L2 * reg_reform_L2:adapted + flood_L3 * reg_reform_L3:adapted,
-               data = tzy_panel[in_sample == TRUE], model = "within", index = c("panel_id", "year"), effect = "twoways")
-summary(ols_res, vcov=vcovHC(ols_res, type="HC1"))
-
-
-# a rough test of the first stage
-testols <- glm(policy_prob ~ flood_event * reg_reform * adapted + year, data = tzy_panel[in_sample == TRUE], family = binomial("probit"))
-summary(testols)
 

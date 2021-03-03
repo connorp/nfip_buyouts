@@ -3,8 +3,9 @@ title: Flood Insurance Impact on Post-Flood Home Sales
 author: Connor P. Jackson
 date: "`r format(Sys.time(), '%B %d, %Y - %H:%M %Z')`"
 output:
-  html_notebook:
+  pdf_document:
     fig_caption: yes
+    toc: yes
     number_sections: yes
     df_print: kable
   html_document:
@@ -16,37 +17,53 @@ output:
     toc_depth: 2
     toc_float: yes
     df_print: kable
-  pdf_document:
+  html_notebook:
     fig_caption: yes
-    toc: yes
     number_sections: yes
     df_print: kable
 linestretch:
 fontsize:
 linkcolor: blue
 urlcolor: blue
-bibliography: 
-link-citations: true
-reference-section-title: References
 ---
 
 ```{r setup, include=FALSE}
 library(knitr)
-library(pander)
 library(rmarkdown)
-library(grateful)
-read_chunk("FILENAMEHERE")
 options(knitr.kable.NA = '')
-panderOptions("digits", 3)
-panderOptions("table.split.cells", 15)
-panderOptions("table.split.table", 120)
 ```
 
-```{r citations, echo = FALSE}
-citerefs <- cite_packages(generate.document = FALSE, all.pkgs = FALSE)
-nocite_references(citerefs, citation_processor = 'pandoc')
+```{r initialize-data, include=FALSE}
+source("merge_and_analysis.R")
 ```
 
-```{r CH-preliminary-steps, include=FALSE}
+Questions of interest:
+
+1. Are homeowners more likely to sell following a flood event in their area (not looking at damage to specific homes)
+2. Does holding a flood insurance policy mediate this effect (instrumenting for insurance takeup with exogenous policy shocks driving price changes)
+
+Empirical method: event study, looking at flood events up to 3 years prior, and whether they held flood insurance in the year of the flood. Y variable is transaction probability in a given year. Currently running linear probability model. Might switch to probit. Instrumenting for flood insurance takeup. Data represents the set of homes in each census tract x flood zone x year of construction. Includes home set and year fixed effects. Will likely add (or swap in) census tract (or county) fixed effects for the spatial FEs. Clustering on the spacial fixed effects.
+
+Coefficients of interest for each question:
+
+1. `flood_eventTRUE`, `flood_L1TRUE`, `flood_L2TRUE`, `flood_L3TRUE`
+2. `flood_eventTRUE:policy_prob`, `flood_L1TRUE:policy_prob_L1`, `flood_L2TRUE:policy_prob_L2`, `flood_L3TRUE:policy_prob_L3`
+
+
+```{r event-study}
+ols_res <- plm(transaction_prob ~ flood_event * policy_prob + flood_L1 * policy_prob_L1
+                                  + flood_L2 * policy_prob_L2 + flood_L3 * policy_prob_L3
+                                  | flood_event * reg_reform:adapted + flood_L1 * reg_reform_L1:adapted
+                                    + flood_L2 * reg_reform_L2:adapted + flood_L3 * reg_reform_L3:adapted,
+               data = tzy_panel[in_sample == TRUE], model = "within", index = c("panel_id", "year"), effect = "twoways")
+summary(ols_res, vcov=vcovHC(ols_res, type="HC1", cluster="group"))
 ```
+
+
+```{r first-stage}
+# a rough test of the first stage (not the lagged versions)
+testols <- lm(policy_prob ~ flood_event * reg_reform * adapted + year, data = tzy_panel[in_sample == TRUE])
+summary(testols)
+```
+
 
