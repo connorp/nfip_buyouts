@@ -1,0 +1,52 @@
+---
+title: Flood Insurance Impact on Post-Flood Home Sales
+author: Connor P. Jackson
+date: "`r format(Sys.time(), '%B %d, %Y - %H:%M %Z')`"
+output:
+  html_notebook:
+    fig_caption: yes
+    number_sections: yes
+    df_print: kable
+  html_document:
+    code_folding: show
+    fig_caption: yes
+    highlight: textmate
+    number_sections: yes
+    toc: yes
+    toc_depth: 2
+    toc_float: yes
+    df_print: kable
+  pdf_document:
+    fig_caption: yes
+    toc: yes
+    number_sections: yes
+    df_print: kable
+linestretch:
+fontsize:
+linkcolor: blue
+urlcolor: blue
+bibliography: 
+link-citations: true
+reference-section-title: References
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+library(pander)
+library(rmarkdown)
+library(grateful)
+read_chunk("FILENAMEHERE")
+options(knitr.kable.NA = '')
+panderOptions("digits", 3)
+panderOptions("table.split.cells", 15)
+panderOptions("table.split.table", 120)
+```
+
+```{r citations, echo = FALSE}
+citerefs <- cite_packages(generate.document = FALSE, all.pkgs = FALSE)
+nocite_references(citerefs, citation_processor = 'pandoc')
+```
+
+```{r CH-preliminary-steps, include=FALSE}
+```
+
