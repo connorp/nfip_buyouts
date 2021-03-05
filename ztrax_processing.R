@@ -6,6 +6,8 @@ library(data.table)
 library(lubridate)
 library(demogztrax)
 library(ggmap)
+library(bit64)
+library(sf)
 
 ## ---- import-ztrax-assessment ----
 ZAsmt_struct <- demogztrax::layout_spec$Zillow_Assessor.ZAsmt

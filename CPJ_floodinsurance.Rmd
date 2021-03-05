@@ -3,9 +3,10 @@ title: Flood Insurance Impact on Post-Flood Home Sales
 author: Connor P. Jackson
 date: "`r format(Sys.time(), '%B %d, %Y - %H:%M %Z')`"
 output:
-pdf_document:
+  pdf_document:
     fig_caption: yes
     toc: yes
+    toc_depth: 1
     number_sections: yes
     df_print: kable
   html_notebook:
@@ -33,6 +34,8 @@ library(rmarkdown)
 library(stargazer)
 library(sandwich)
 library(plm)
+library(lfe)
+library(ggplot2)
 options(knitr.kable.NA = '')
 ```
 
@@ -52,13 +55,42 @@ Summary stats table of policies and claims
 
 Show a graph of the first stage: number (or percentage) of policies by year, adapted vs nonadapted
 
+Vertical lines show when Biggert-Waters and HFIAA took effect, respectively
+
+```{r first-stage-graph}
+firststage <- tzy_panel[in_sample == TRUE, .(polfrac = sum(policies_count) / sum(properties_count)), keyby = .(year, adapted)]
+ggplot(firststage, aes(x=year, y=polfrac)) + geom_point(aes(color = adapted, shape=adapted)) + geom_vline(xintercept=4.5) + geom_vline(xintercept=6.5)
+```
+
+
 ## Housing Assessment and Transactions
 
 First page footnote: Data provided by Zillow through the Zillow Transaction and Assessment Dataset (ZTRAX). More information on accessing the data can be found at <http://www.zillow.com/ztrax>. The results and opinions are those of the author and do not reflect the position of Zillow Group.
 
 Summary stats table of homes and transactions
 
+Average transaction probability in our sample: 
+
+```{r overall-transaction-prob}
+tzy_panel[in_sample == TRUE, sum(transaction_count) / sum(properties_count)]
+```
+
 Show transaction probability over time (by year and relative to floods), split by adapted and non-adapted
+
+```{r trans-prob}
+transtime <- tzy_panel[in_sample == TRUE, .(transfrac = sum(transaction_count) / sum(properties_count)), keyby = .(year, adapted)]
+ggplot(transtime, aes(x=year, y=transfrac)) + geom_point(aes(color = adapted)) + geom_vline(xintercept=4.5) + geom_vline(xintercept=6.5)
+```
+
+transaction probably by years since (or before, for F1) flood event, adapted vs nonadapted (including fixed effects by year of construction) 
+
+```{r transprob-byflood}
+transprob_flood <- felm(transaction_prob ~ adapted*flood_event + adapted*flood_L1 + adapted*flood_L2 
+                        + adapted*flood_L3 + adapted*flood_F1 | panel_id + year + YearBuilt | 0 | censusTract, 
+                        data = tzy_panel[sample_3L == TRUE])
+summary(transprob_flood)
+```
+
 
 ## Constructed Panel
 
@@ -79,76 +111,121 @@ Questions of interest:
 1. Are homeowners more likely to sell following a flood event in their area (not looking at damage to specific homes)
 2. Does holding a flood insurance policy mediate this effect (instrumenting for insurance takeup with exogenous policy shocks driving price changes)
 
-Empirical method: event study, looking at flood events up to 3 years prior, and whether they held flood insurance in the year of the flood. Y variable is transaction probability in a given year. Currently running linear probability model. Might switch to probit. Instrumenting for flood insurance takeup. Data represents the set of homes in each census tract x flood zone x year of construction. Includes home set and year fixed effects. Will likely add (or swap in) census tract (or county) fixed effects for the spatial FEs. Clustering on the spacial fixed effects.
-
-Coefficients of interest for each question:
-
-1. `flood_eventTRUE`, `flood_L1TRUE`, `flood_L2TRUE`, `flood_L3TRUE`
-2. `flood_eventTRUE:policy_prob`, `flood_L1TRUE:policy_prob_L1`, `flood_L2TRUE:policy_prob_L2`, `flood_L3TRUE:policy_prob_L3`
-
-Average transaction probability in our sample: 
-
-```{r}
-tzy_panel[in_sample == TRUE, mean(transaction_prob)]
-```
+Empirical method: event study, looking at flood events up to 3 years prior, and whether they held flood insurance in the year of the flood. Y variable is transaction probability in a given year. Currently running linear probability model. Might switch to probit. Instrumenting for flood insurance takeup. Data represents the set of homes in each census tract x flood zone x year of construction. Includes census tract x floodzone and year fixed effects. Clustering on census tract
 
 # Results
 
+## OLS
+
+```{r OLS-2-noF, include=FALSE}
 # Two Lags, no Leads
-
-```{r event-study-2-noF}
-ols_res <- plm(transaction_prob ~ flood_event * policy_prob + flood_L1 * policy_prob_L1
-                                  + flood_L2 * policy_prob_L2
-                                  | flood_event * reg_reform:adapted + flood_L1 * reg_reform_L1:adapted
-                                    + flood_L2 * reg_reform_L2:adapted,
-               data = tzy_panel[in_sample == TRUE], model = "within", index = c("panel_id", "year"), effect = "twoway")
-summary(ols_res, vcov=vcovHC(ols_res, type="HC1", cluster="group"))
-# summary(ols_res)
+OLS_transprob_reg_2 <- felm(transaction_prob ~ flood_event*policy_prob + flood_L1*policy_prob_L1 
+                        + flood_L2*policy_prob_L2 | panel_id + year 
+                        | 0 | censusTract, data = tzy_panel[sample_2L == TRUE])
+summary(OLS_transprob_reg_2)
 ```
 
+
+
+```{r OLS-3-noF, include=FALSE}
 # Three Lags, No Leads
-
-```{r event-study-3-noF}
-ols_res <- plm(transaction_prob ~ flood_event * policy_prob + flood_L1 * policy_prob_L1
-                                  + flood_L2 * policy_prob_L2 + flood_L3 * policy_prob_L3
-                                  | flood_event * reg_reform:adapted + flood_L1 * reg_reform_L1:adapted
-                                    + flood_L2 * reg_reform_L2:adapted + flood_L3 * reg_reform_L3:adapted,
-               data = tzy_panel[in_sample == TRUE], model = "within", index = c("panel_id", "year"), effect = "twoway")
-summary(ols_res, vcov=vcovHC(ols_res, type="HC1", cluster="group"))
-# summary(ols_res)
+OLS_transprob_reg_3 <- felm(transaction_prob ~ flood_event*policy_prob + flood_L1*policy_prob_L1 
+                        + flood_L2*policy_prob_L2 + flood_L3*policy_prob_L3 | panel_id + year 
+                        | 0 | censusTract, data = tzy_panel[sample_3L == TRUE])
+summary(OLS_transprob_reg_3)
 ```
 
+
+
+```{r OLS-2-F, include=FALSE}
 # Two Lags, One Lead
-
-```{r event-study-2-F}
-ols_res <- plm(transaction_prob ~ flood_event * policy_prob + flood_L1 * policy_prob_L1
-                                  + flood_L2 * policy_prob_L2 + flood_F1 * policy_prob_F1
-                                  | flood_event * reg_reform:adapted + flood_L1 * reg_reform_L1:adapted
-                                    + flood_L2 * reg_reform_L2:adapted + flood_F1 * reg_reform_F1:adapted,
-               data = tzy_panel[in_sample == TRUE], model = "within", index = c("panel_id", "year"), effect = "twoway")
-summary(ols_res, vcov=vcovHC(ols_res, type="HC1", cluster="group"))
-# summary(ols_res)
+OLS_transprob_reg_2_lead <- felm(transaction_prob ~ flood_event*policy_prob + flood_L1*policy_prob_L1 
+                        + flood_L2*policy_prob_L2 + flood_F1*policy_prob_F1 | panel_id + year 
+                             | 0 | censusTract, data = tzy_panel[sample_2L == TRUE])
+summary(OLS_transprob_reg_2_lead)
 ```
 
+
+
+```{r OLS-3-F, include=FALSE}
 # Three Lags, One Lead
+OLS_transprob_reg_3_lead <- felm(transaction_prob ~ flood_event*policy_prob + flood_L1*policy_prob_L1 
+                        + flood_L2*policy_prob_L2 + flood_L3*policy_prob_L3 + flood_F1*policy_prob_F1 | panel_id + year 
+                             | 0 | censusTract, data = tzy_panel[sample_2L == TRUE])
+summary(OLS_transprob_reg_3_lead)
+```
 
-```{r event-study-3-F}
-ols_res <- plm(transaction_prob ~ flood_event * policy_prob + flood_L1 * policy_prob_L1
-                                  + flood_L2 * policy_prob_L2 + flood_L3 * policy_prob_L3 + flood_F1 * policy_prob_F1
-                                  | flood_event * reg_reform:adapted + flood_L1 * reg_reform_L1:adapted
-                                    + flood_L2 * reg_reform_L2:adapted + flood_L3 * reg_reform_L3:adapted + flood_F1 * reg_reform_F1:adapted,
-               data = tzy_panel[in_sample == TRUE], model = "within", index = c("panel_id", "year"), effect = "twoway")
-summary(ols_res, vcov=vcovHC(ols_res, type="HC1", cluster="group"))
-# summary(ols_res)
+```{r OLS-output, echo=FALSE, warning=FALSE, echo=FALSE, results='asis'}
+covariate_labs <- c("flood (concurrent)", "flood (1 year ago)", "flood (2 years ago)", "flood (3 years ago)", 
+                    "flood (next year)", "insurance (concurrent)", "insurance (1 year ago)", "insurance (2 years ago)",
+                    "insurance (3 years ago)","insurance (next year)", "flood x insurance (concurrent)",
+                    "flood x insurance (1 year ago)", "flood x insurance (2 years ago)",
+                    "flood x insurance (3 years ago)", "flood x insurance (next year)")
+stargazer(OLS_transprob_reg_2, OLS_transprob_reg_3, OLS_transprob_reg_2_lead, OLS_transprob_reg_3_lead, type="latex",
+          covariate.labels = covariate_labs, order = c(1,3,5,7,9,2,4,6,8,10,11:15), 
+          title="Regressions of Home Sale Probability on Flood Events and Insurance, OLS", 
+          dep.var.caption = "Probability of Home Sale", dep.var.labels.include = FALSE, 
+          column.sep.width = "2pt", df=FALSE, digits = 5, header = FALSE, keep.stat = c("n", "rsq"))
+```
+
+## IV
+
+```{r IV-2-noF, include=FALSE}
+# Two Lags, no Leads
+transprob_reg_2 <- felm(transaction_prob ~ flood_event + flood_L1 + flood_L2 | panel_id + year 
+                        | (policy_prob | policy_prob_L1 | policy_prob_L2 | flooded_insured 
+                           | flooded_insured_L1 | flooded_insured_L2 
+                           ~ flood_event:reg_reform*adapted + flood_L1:reg_reform_L1*adapted 
+                           + flood_L2:reg_reform_L2:adapted) | censusTract, data = tzy_panel[sample_2L == TRUE])
+summary(transprob_reg_2)
 ```
 
 
-```{r first-stage}
-ols_res <- plm(transaction_prob ~ flood_event * policy_prob + flood_L1 * policy_prob_L1
-                                  + flood_L2 * policy_prob_L2 + flood_F1 * policy_prob_F1,
-               data = tzy_panel[in_sample == TRUE], model = "within", index = c("panel_id", "year"), effect = "twoway")
-# summary(ols_res, vcov=vcovHC(ols_res, type="HC1", cluster="group"))
-summary(ols_res)
+
+```{r IV-3-noF, include=FALSE}
+# Three Lags, No Leads
+transprob_reg_3 <- felm(transaction_prob ~ flood_event + flood_L1 + flood_L2 + flood_L3 | panel_id + year 
+                        | (policy_prob | policy_prob_L1 | policy_prob_L2 | policy_prob_L3 
+                           | flooded_insured | flooded_insured_L1 | flooded_insured_L2 | flooded_insured_L3 
+                           ~ flood_event:reg_reform*adapted + flood_L1:reg_reform_L1*adapted 
+                           + flood_L2:reg_reform_L2:adapted + flood_L3:reg_reform_L3:adapted) 
+                        | censusTract, data = tzy_panel[sample_3L == TRUE])
+summary(transprob_reg_3)
+```
+
+
+
+```{r IV-2-F, include=FALSE}
+# Two Lags, One Lead
+transprob_reg_2_lead <- felm(transaction_prob ~ flood_event + flood_L1 + flood_L2 + flood_F1 | panel_id + year 
+                             | (policy_prob | policy_prob_L1 | policy_prob_L2 | policy_prob_F1 
+                                | flooded_insured | flooded_insured_L1 | flooded_insured_L2 | flooded_insured_F1
+                                ~ flood_event:reg_reform*adapted + flood_L1:reg_reform_L1*adapted 
+                                + flood_L2:reg_reform_L2:adapted + flood_F1:reg_reform_F1:adapted) 
+                             | censusTract, data = tzy_panel[sample_2L == TRUE])
+summary(transprob_reg_2_lead)
+```
+
+
+
+```{r IV-3-F, include=FALSE}
+# Three Lags, One Lead
+transprob_reg_3_lead <- felm(transaction_prob ~ flood_event + flood_L1 + flood_L2 + flood_L3 + flood_F1 | panel_id + year 
+                             | (policy_prob | policy_prob_L1 | policy_prob_L2 | policy_prob_L3 | policy_prob_F1 
+                                | flooded_insured | flooded_insured_L1 | flooded_insured_L2 | flooded_insured_L3 | flooded_insured_F1
+                                ~ flood_event:reg_reform*adapted + flood_L1:reg_reform_L1*adapted 
+                                + flood_L2:reg_reform_L2:adapted + flood_L3:reg_reform_L3:adapted + flood_F1:reg_reform_F1:adapted) 
+                             | censusTract, data = tzy_panel[sample_2L == TRUE])
+summary(transprob_reg_3_lead)
+```
+
+
+```{r IV-output, echo=FALSE, warning=FALSE, echo=FALSE, results='asis'}
+stargazer(transprob_reg_2, transprob_reg_3, transprob_reg_2_lead, transprob_reg_3_lead, 
+          type="latex", covariate.labels = covariate_labs, 
+          title="Regressions of Home Sale Probability on Flood Events and Insurance, Instrumenting for Insurance", 
+          dep.var.caption = "Probability of Home Sale", dep.var.labels.include = FALSE, 
+          column.sep.width = "2pt", df=FALSE, digits = 5, header = FALSE, keep.stat = c("n", "rsq"))
 ```
 
 

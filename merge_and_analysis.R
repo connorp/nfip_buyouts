@@ -6,7 +6,6 @@ library(data.table)
 library(bit64)
 library(lubridate)
 library(tidyr)
-library(sf)
 library(DescTools)
 library(tidycensus)
 
@@ -16,7 +15,7 @@ nchomes <- fread("../data_buyouts/ZAsmt_NC.csv", key="ImportParcelID", index="la
 nctrans <- fread("../data_buyouts/ZTrans_NC.csv", key="ImportParcelID", na.strings = "")
 source("NFIP_claims_processing.R")
 
-nchomes <- nchomes[!is.na(censusTract)]
+nchomes <- nchomes[!is.na(PropertyAddressCensusTractAndBlock)]
 # TODO: recreate missing census tracts from zipcodes or latlongs
 
 # Remove unreasonable years built, cross-apply missing years built, drop properties with unknown years
@@ -148,8 +147,9 @@ setkey(policies_panel, censusTract, floodZone, YearBuilt, year)
 
 tzy_panel <- nctrans_panel[, .(properties_count = .N, TotalAssessedValue = mean(TotalAssessedValue),
                                TotalMarketValue = mean(TotalMarketValue),
-                               transaction_prob = mean(transaction_obs), SalesPriceAmount = mean(SalesPriceAmount)),
+                               transaction_count = sum(transaction_obs), SalesPriceAmount = mean(SalesPriceAmount)),
                            keyby = .(censusTract, floodZone, YearBuilt, year)]
+tzy_panel[, transaction_prob := transaction_count / properties_count]
 
 tzy_panel <- merge(tzy_panel, policies_panel, all.x = TRUE)
 tzy_panel <- merge(tzy_panel, flood_panel, by = c("censusTract", "floodZone", "year"), all.x = TRUE)
@@ -182,10 +182,22 @@ tzy_panel[, reg_reform_L3 := shift(reg_reform, 3, type = "lag"), by = .(censusTr
 tzy_panel[, reg_reform_F1 := shift(reg_reform, 1, type = "lead"), by = .(censusTract, floodZone, YearBuilt)]
 
 # tractable instruments: legislative changes (2013 x adapted)
+# construct the instruments manually: flood_event:policy_prob | flood_L1:policy_prob_L1 | flood_L2:policy_prob_L2
+tzy_panel[, flooded_insured := flood_event*policy_prob]
+tzy_panel[, flooded_insured_L1 := flood_L1*policy_prob_L1]
+tzy_panel[, flooded_insured_L2 := flood_L2*policy_prob_L2]
+tzy_panel[, flooded_insured_L3 := flood_L3*policy_prob_L3]
+tzy_panel[, flooded_insured_F1 := flood_F1*policy_prob_F1]
+
+
 # year range: 2009-2016 (2017 is only thru September) (2012-2016 with lags)
 tzy_panel[, in_sample := ((year %in% 2009:2016) & !is.na(adapted) & YearBuilt < 2009)]
-tzy_panel[, panel_id := paste(censusTract, floodZone, YearBuilt, sep="_")]
-tzy_panel[, censusTract := as.character(censusTract)]
+tzy_panel[, sample_2L := in_sample & year > 2010]
+tzy_panel[, sample_3L := in_sample & year > 2011]
+tzy_panel[, panel_id := as.factor(paste(censusTract, floodZone, sep="_"))]
+tzy_panel[, censusTract := as.factor(censusTract)]
+tzy_panel[, YearBuilt := as.factor(YearBuilt)]
+tzy_panel[, year := as.factor(year)]
 
 # TODO: figure out issue with policies exceeding properties
 bad_tracts <- tzy_panel[in_sample == TRUE & policies_count > properties_count, unique(panel_id)]
