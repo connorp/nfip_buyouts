@@ -45,11 +45,25 @@ source("merge_and_analysis.R")
 
 # Introduction
 
+Motivation: severe repetitive loss properties and buyouts
 
+Flood damage prevention and recovery has been a major expediture for every level of government in the United States for nearly a century, and climate change is leading to floods of increased frequency and intensity. 
+
+Summary of method and results
+
+takeaways and literature contributions
 
 # Data
 
+This research is built upon two primary data sources: flood insurance policies, claims and flood zones from the National Flood Insurance Program, and real estate assessment and transaction records from the Zillow ZTRAX dataset. I focus on North Carolina, which is one of the primary states covered by NFIP policies and receiving claims. North Carolina was selected based on its high frequency of tropical storms and flooding incidents, complete coverage of digital flood maps, and variation in community characteristics in special flood hazard areas. Much of North Carolina's severe weather comes in the form of large amounts of precipitation and storm surge, rather than damaging winds, which are not covered by the NFIP. In addition, nearly all of North Carolina's counties (including all of its coastal counties) have digitized flood insurance rate maps (FIRMs), which allows me to identify the flood zone of nearly every property in the state. 
+
 ## Flood Insurance Policies and Claims
+
+FEMA publishes deidentified micro data on all NFIP policies underwritten by the federal government, which covers nearly all flood insurance policies written in the United States. The data describes the amount of coverage, premia and fees, deductibles, and attributes about the covered property. Properties are identified to the census tract, and also have flood zone and year of construction, which I use to match with the home data. Flood insurance policy data are available for the years `r policies[, min(year(policyEffectiveDate))]`—`r policies[, max(year(policyEffectiveDate))]`. I discard policies that cover only home contents and not the structure itself. 
+
+The NFIP claims data details every claim filed with the NFIP in the state from `r claims[, min(year(dateOfLoss))]` through `r claims[, max(year(dateOfLoss))]` The data include details about the insured property, the insurance coverage, and the loss event and subsequent claim and payout. I discard claims that cover only loss of contents (either due to the policyholder not holding any building coverage, or not submitting a claim for building damage), as well as those with listed payouts that exceed the maximum coverage of $250,000. The claims data are used to identify which properties were exposed to flooding in a given year. Since a given property's vulnerability to flood damage is endogenous, through defensive investments, home elevation, etc, I define exposure to flooding by indicating whether a flood claim was filed within the intersection of a census tract and flood zone in each year. 
+
+Finally, I also use the national flood hazard layer geospatial database to assign individual properties to flood zones, to allow matching with the policies and claims data.
 
 Summary stats table of policies and claims
 
@@ -67,9 +81,13 @@ ggplot(firststage, aes(x=year, y=polfrac)) + geom_point(aes(color = adapted, sha
 
 First page footnote: Data provided by Zillow through the Zillow Transaction and Assessment Dataset (ZTRAX). More information on accessing the data can be found at <http://www.zillow.com/ztrax>. The results and opinions are those of the author and do not reflect the position of Zillow Group.
 
+The [ZTRAX data](https://www.zillow.com/research/ztrax/) are a real estate database of properties comprised of both assessor records and real estate transaction records, compiled into a nationwide database by Zillow. The assessor data include details about the parcel and primary structure, location (street address, census tract, and latitude and longitude), and value (assessed and market values). This table is used to identify the sample of North Carolina homes. I limit the sample to single family homes, excluding rural residences (homes on productive agricultural land) as well as condominums and similar structures. Assessment data are available from `r nchomes[, min(year(record_date))]` through `r nchomes[, max(year(record_date))]`.
+
+The transaction data then contains information about every real estate transaction recorded for the parcels in the assessor data. The records include the date and type of transaction, information about the buyer, seller, and lender, if applicable, sale price and any taxes, and mortgage information. These data require extensive filtering to identify the set of records that correspond to "arm's length" transactions that correspond to true home sales, rather than refinancing, transfers to family members, or liens. Data are available for transactions from `r nctrans[, min(year(RecordingDate), na.rm = TRUE)]` through `r nctrans[, max(year(RecordingDate), na.rm = TRUE)]`. I discard homes that were built in the same year as their area's first flood insurance rate map (FIRM) which determines adaptation requirements, since the requirement within the same year is ambiguous, as well as homes with unrecorded years of construction.
+
 Summary stats table of homes and transactions
 
-Average transaction probability in our sample: 
+Average transaction probability in the sample: 
 
 ```{r overall-transaction-prob}
 tzy_panel[in_sample == TRUE, sum(transaction_count) / sum(properties_count)]
@@ -91,27 +109,21 @@ transprob_flood <- felm(transaction_prob ~ adapted*flood_event + adapted*flood_L
 summary(transprob_flood)
 ```
 
-
 ## Constructed Panel
 
-description of panel construction, sample size
+My constructed sample is comprised of arm's length transactions of single family homes in North Carolina special flood hazard areas (SFHA), using data from 2009--2016. Because the flood insurance data are not available at the individual home level, I aggregate the data to the level of census tract, flood zone, and year of home construction. From these data, I construct a yearly panel of these cells of homes, defining the fraction of homes in each cell that were sold and hold a flood insurance policy, as well as whether the homes were exposed to a flood event. Since selling a home is often a time consuming process, I look across multiple years to find effects, so I create lagged variables of flood events and insurance policies. Because the range of years in my panel is limited, the choice of lags limits the sample size of the panel. With 2 lags, I can consider sales from 2011--2016, while 3 lags restricts the panel to 2012--2016. I restrict the panel to include only homes built before 2009, so no homes enter the dataset in the middle of the analysis period. Because the NFIP data extends beyond the housing data, I also create one year lead variables of flood events and insurance policies as a check for pretrends without reducing the sample size of the panel.
+
+panel descriptive statistics table. n, T, N, average homes per cell, average policies per cell
 
 # Model
 
-Fixed effects regressions: OLS and IV, 2 vs 3 lag, lead vs no lead. 8 regressions total
-Also include a first stage regression
-Cluster at the census tract level (or at the county level?)
+My research question is twofold: first, does experiencing a flood lead homeowners to sell their properties, and second, does holding flood insurance mediate this effect. To explore these questions, I apply an event study framework to this panel dataset. The main estimating equation is
+$$P(transaction_{lit}) = \sum_{\tau} \left[\alpha_{\tau} Insurance_{lit+\tau} + \beta_{\tau} Flood_{lt+\tau} + \gamma_{\tau} (Flood_{lt+\tau} \times Insurance_{lit+\tau}) \right] + \delta_l + \delta_t + \varepsilon_{lit}$$
+where $l$ indexes locations (the intersection of a census tract and a flood zone), $i$ indexes the set of homes constructed in the same year, and $t$ indexes the year of observation. The lag indexer $\tau$ takes on values from -3 (a three year lag) to +1 (a one year lead). The model includes location and year fixed effects, and standard errors are clustered at the census tract level. The outcome variable of this linear probability model is the sale probability of homes in the cell in a given year, and the regressors include an indicator for a flood event occurring, $Flood$, and the fraction of homes with flood insurance, $Insurance$, in the given observation year (with the relevant lags). 
 
-identifying assumptions
-- flood probability is exogenous conditional on census tract, flood zone, adaptation status
-- any time trends in transaction probability are common to adapted and non-adapted homes
+Because the choice to purchase flood insurance is endogenous, we use two exogenous policy shocks that changed flood insurance rate schedules to instrument for insurance takeup. The Biggert Waters Flood Insurance Reform Act of 2012 and the Homeowner Flood Insurance Affordability Act of 2014 made several changes to NFIP rate schedules starting in 2013 and 2015, respectively. Some of the rate changes applied to all insured homes, while others applied differently to adapted and non-adapted homes. Homes built or substantially renovated after the adoption of the first FIRM panel covering the property were required to be adapted in their design to reduce the risk of flood damage, primarily through elevation of the lowest occupied level of the home. These policy changes will provide exogenous policy variation to identify the effect of holding flood insurance. The adapted status is defined by the year of home construction relative to the year of FIRM adoption. 
 
-Questions of interest:
-
-1. Are homeowners more likely to sell following a flood event in their area (not looking at damage to specific homes)
-2. Does holding a flood insurance policy mediate this effect (instrumenting for insurance takeup with exogenous policy shocks driving price changes)
-
-Empirical method: event study, looking at flood events up to 3 years prior, and whether they held flood insurance in the year of the flood. Y variable is transaction probability in a given year. Currently running linear probability model. Might switch to probit. Instrumenting for flood insurance takeup. Data represents the set of homes in each census tract x flood zone x year of construction. Includes census tract x floodzone and year fixed effects. Clustering on census tract
+This econometric approach makes two identification assumptions: first, the probability of a home experiencing flooding is exogenous, conditional on census tract, flood zone, and adaptation status. Second, any time trends in transaction probability must be common to adapted and non-adapted homes. Without common time trends, none of the variation in prices from the policy changes will be exogenous, even the differential variation between adapted and non-adapted homes, violating the exclusion restriction. 
 
 # Results
 
@@ -125,8 +137,6 @@ OLS_transprob_reg_2 <- felm(transaction_prob ~ flood_event*policy_prob + flood_L
 summary(OLS_transprob_reg_2)
 ```
 
-
-
 ```{r OLS-3-noF, include=FALSE}
 # Three Lags, No Leads
 OLS_transprob_reg_3 <- felm(transaction_prob ~ flood_event*policy_prob + flood_L1*policy_prob_L1 
@@ -135,8 +145,6 @@ OLS_transprob_reg_3 <- felm(transaction_prob ~ flood_event*policy_prob + flood_L
 summary(OLS_transprob_reg_3)
 ```
 
-
-
 ```{r OLS-2-F, include=FALSE}
 # Two Lags, One Lead
 OLS_transprob_reg_2_lead <- felm(transaction_prob ~ flood_event*policy_prob + flood_L1*policy_prob_L1 
@@ -144,8 +152,6 @@ OLS_transprob_reg_2_lead <- felm(transaction_prob ~ flood_event*policy_prob + fl
                              | 0 | censusTract, data = tzy_panel[sample_2L == TRUE])
 summary(OLS_transprob_reg_2_lead)
 ```
-
-
 
 ```{r OLS-3-F, include=FALSE}
 # Three Lags, One Lead
@@ -161,7 +167,8 @@ covariate_labs <- c("flood (concurrent)", "flood (1 year ago)", "flood (2 years 
                     "insurance (3 years ago)","insurance (next year)", "flood x insurance (concurrent)",
                     "flood x insurance (1 year ago)", "flood x insurance (2 years ago)",
                     "flood x insurance (3 years ago)", "flood x insurance (next year)")
-stargazer(OLS_transprob_reg_2, OLS_transprob_reg_3, OLS_transprob_reg_2_lead, OLS_transprob_reg_3_lead, type="latex",
+stargazer(OLS_transprob_reg_2, OLS_transprob_reg_3, OLS_transprob_reg_2_lead, OLS_transprob_reg_3_lead, 
+          type=ifelse(knitr::is_latex_output(), "latex", "text"),
           covariate.labels = covariate_labs, order = c(1,3,5,7,9,2,4,6,8,10,11:15), 
           title="Regressions of Home Sale Probability on Flood Events and Insurance, OLS", 
           dep.var.caption = "Probability of Home Sale", dep.var.labels.include = FALSE, 
