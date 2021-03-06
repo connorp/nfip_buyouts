@@ -71,9 +71,9 @@ Show a graph of the first stage: number (or percentage) of policies by year, ada
 
 Vertical lines show when Biggert-Waters and HFIAA took effect, respectively
 
-```{r first-stage-graph}
+```{r first-stage-graph, echo=FALSE}
 firststage <- tzy_panel[in_sample == TRUE, .(polfrac = sum(policies_count) / sum(properties_count)), keyby = .(year, adapted)]
-ggplot(firststage, aes(x=year, y=polfrac)) + geom_point(aes(color = adapted, shape=adapted)) + geom_vline(xintercept=4.5) + geom_vline(xintercept=6.5)
+ggplot(firststage, aes(x=year, y=polfrac)) + geom_point(aes(color = adapted, shape=adapted)) + geom_vline(xintercept=4.5) + geom_vline(xintercept=6.5) + ggtitle("Flood Insurance Adoption Over Time") + ylab("Fraction of Homes with Flood Insurance") + geom_text(aes(x=4.25, label="Biggert Waters Act", y=.03), angle=90)  + geom_text(aes(x=6.25, label="HFIAA", y=.03), angle=90)
 ```
 
 
@@ -95,14 +95,14 @@ tzy_panel[in_sample == TRUE, sum(transaction_count) / sum(properties_count)]
 
 Show transaction probability over time (by year and relative to floods), split by adapted and non-adapted
 
-```{r trans-prob}
+```{r trans-prob, echo=FALSE}
 transtime <- tzy_panel[in_sample == TRUE, .(transfrac = sum(transaction_count) / sum(properties_count)), keyby = .(year, adapted)]
-ggplot(transtime, aes(x=year, y=transfrac)) + geom_point(aes(color = adapted)) + geom_vline(xintercept=4.5) + geom_vline(xintercept=6.5)
+ggplot(transtime, aes(x=year, y=transfrac)) + geom_point(aes(color = adapted)) + geom_vline(xintercept=4.5) + geom_vline(xintercept=6.5) + ggtitle("Home Sale Probability Over Time") + ylab("Probability of Home Sale") + geom_text(aes(x=4.25, label="Biggert Waters Act", y=.055), angle=90)  + geom_text(aes(x=6.25, label="HFIAA", y=.055), angle=90)
 ```
 
 transaction probably by years since (or before, for F1) flood event, adapted vs nonadapted (including fixed effects by year of construction) 
 
-```{r transprob-byflood}
+```{r transprob-byflood, echo=FALSE}
 transprob_flood <- felm(transaction_prob ~ adapted*flood_event + adapted*flood_L1 + adapted*flood_L2 
                         + adapted*flood_L3 + adapted*flood_F1 | panel_id + year + YearBuilt | 0 | censusTract, 
                         data = tzy_panel[sample_3L == TRUE])
@@ -170,9 +170,9 @@ covariate_labs <- c("flood (concurrent)", "flood (1 year ago)", "flood (2 years 
 stargazer(OLS_transprob_reg_2, OLS_transprob_reg_3, OLS_transprob_reg_2_lead, OLS_transprob_reg_3_lead, 
           type=ifelse(knitr::is_latex_output(), "latex", "text"),
           covariate.labels = covariate_labs, order = c(1,3,5,7,9,2,4,6,8,10,11:15), 
-          title="Regressions of Home Sale Probability on Flood Events and Insurance, OLS", 
+          title="Home Sale Probability Against Flood Events and Insurance, OLS", 
           dep.var.caption = "Probability of Home Sale", dep.var.labels.include = FALSE, 
-          column.sep.width = "2pt", df=FALSE, digits = 5, header = FALSE, keep.stat = c("n", "rsq"))
+          column.sep.width = "2pt", df=FALSE, digits = 4, header = FALSE, keep.stat = c("n", "rsq"))
 ```
 
 ## IV
@@ -230,9 +230,9 @@ summary(transprob_reg_3_lead)
 ```{r IV-output, echo=FALSE, warning=FALSE, echo=FALSE, results='asis'}
 stargazer(transprob_reg_2, transprob_reg_3, transprob_reg_2_lead, transprob_reg_3_lead, 
           type="latex", covariate.labels = covariate_labs, 
-          title="Regressions of Home Sale Probability on Flood Events and Insurance, Instrumenting for Insurance", 
+          title="Home Sale Probability Against Flood Events and Insurance, Instrumenting for Insurance", 
           dep.var.caption = "Probability of Home Sale", dep.var.labels.include = FALSE, 
-          column.sep.width = "2pt", df=FALSE, digits = 5, header = FALSE, keep.stat = c("n", "rsq"))
+          column.sep.width = "2pt", df=FALSE, digits = 4, header = FALSE, keep.stat = "n")
 ```
 
 

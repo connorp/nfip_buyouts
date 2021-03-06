@@ -15,7 +15,7 @@ nchomes <- fread("../data_buyouts/ZAsmt_NC.csv", key="ImportParcelID", index="la
 nctrans <- fread("../data_buyouts/ZTrans_NC.csv", key="ImportParcelID", na.strings = "")
 source("NFIP_claims_processing.R")
 
-nchomes <- nchomes[!is.na(PropertyAddressCensusTractAndBlock)]
+nchomes <- nchomes[!is.na(censusTract)]
 # TODO: recreate missing census tracts from zipcodes or latlongs
 
 # Remove unreasonable years built, cross-apply missing years built, drop properties with unknown years
