@@ -8,7 +8,7 @@ output:
     toc: yes
     toc_depth: 1
     number_sections: yes
-    df_print: kable
+    df_print: !expr pander::pander
   bookdown::html_notebook2:
     fig_caption: yes
     number_sections: yes
@@ -24,21 +24,34 @@ output:
     df_print: kable
 linestretch:
 fontsize:
+bibliography: [library.bib, pkg-refs.bib]
+link-citations: true
+reference-section-title: References
 linkcolor: blue
 urlcolor: blue
-abstract: ""
+abstract: "Abstract will go here"
 ---
 
 ```{r setup, include=FALSE}
 library(bookdown)
 library(knitr)
+library(pander)
 library(rmarkdown)
 library(stargazer)
-library(sandwich)
-library(plm)
 library(lfe)
 library(ggplot2)
+library(grateful)
 options(knitr.kable.NA = '')
+panderOptions("digits", 4)
+panderOptions("table.split.cells", 50)
+panderOptions("table.split.table", 120)
+panderOptions("big.mark", ",")
+# panderOptions("table.caption.prefix", paste("Table:", knitr::opts_current$get('label')))
+```
+
+```{r citations, echo = FALSE}
+citerefs <- cite_packages(generate.document = FALSE, all.pkgs = FALSE)
+nocite_references(citerefs, citation_processor = 'pandoc')
 ```
 
 ```{r initialize-data, include=FALSE}
@@ -67,13 +80,7 @@ The NFIP claims data details every claim filed with the NFIP in the state from `
 
 Finally, I also use the national flood hazard layer geospatial database to assign individual properties to flood zones, to allow matching with the policies and claims data.
 
-Table \@ref(tab:nfip-summary-stats) provides summary statistics for the flood insurance policies and claims data from NFIP that are used in this analysis. 
-
-```{r nfip-summary-stats}
-# Summary stats table of policies and claims
-```
-
-```{r first-stage-graph, echo=FALSE, fig.cap="Flood insurance adoption, driven by Biggert-Waters and HFIAA, separately for adapted and non-adapted homes. The key source of variation in my first stage. "}
+```{r first-stage-graph, echo=FALSE, fig.cap="Flood insurance adoption, driven by Biggert-Waters and HFIAA, separately for adapted and non-adapted homes. The key source of variation in my first stage.", fig.dim=c(5,3.5)}
 firststage <- tzy_panel[in_sample == TRUE, .(polfrac = sum(policies_count) / sum(properties_count)), keyby = .(year, adapted)]
 ggplot(firststage, aes(x=year, y=polfrac)) + geom_point(aes(color = adapted, shape=adapted)) + geom_vline(xintercept=4.5) + geom_vline(xintercept=6.5) + ggtitle("Flood Insurance Adoption Over Time") + ylab("Fraction of Homes with Flood Insurance") + geom_text(aes(x=4.25, label="Biggert Waters Act", y=.03), angle=90)  + geom_text(aes(x=6.25, label="HFIAA", y=.03), angle=90)
 ```
@@ -86,30 +93,38 @@ The [ZTRAX data](https://www.zillow.com/research/ztrax/) are a real estate datab
 
 The transaction data then contains information about every real estate transaction recorded for the parcels in the assessor data. The records include the date and type of transaction, information about the buyer, seller, and lender, if applicable, sale price and any taxes, and mortgage information. These data require extensive filtering to identify the set of records that correspond to "arm's length" transactions that correspond to true home sales, rather than refinancing, transfers to family members, or liens. Data are available for transactions from `r nctrans[, min(year(RecordingDate), na.rm = TRUE)]` through `r nctrans[, max(year(RecordingDate), na.rm = TRUE)]`. I discard homes that were built in the same year as their area's first flood insurance rate map (FIRM) which determines adaptation requirements, since the requirement within the same year is ambiguous, as well as homes with unrecorded years of construction. Figure \@ref(fig:trans-prob) shows the fraction of homes sold in a given sample year, separately for adapted and nonadapted homes. Depending on the number of lags, transactions in 2011 are sometimes excluded from the analysis. 
 
-```{r trans-prob, echo=FALSE, fig.cap="Graph of home sale probability over time, separately for adapted and nonadapted homes."}
+```{r trans-prob, echo=FALSE, fig.cap="Graph of home sale probability over time, separately for adapted and nonadapted homes.", fig.dim=c(5,3.5)}
 transtime <- tzy_panel[sample_2L == TRUE, .(transfrac = sum(transaction_count) / sum(properties_count)), keyby = .(year, adapted)]
 ggplot(transtime, aes(x=year, y=transfrac)) + geom_point(aes(color = adapted)) + geom_vline(xintercept=2.5) + geom_vline(xintercept=4.5) + ggtitle("Home Sale Probability Over Time") + ylab("Probability of Home Sale") + geom_text(aes(x=2.25, label="Biggert Waters Act", y=.055), angle=90)  + geom_text(aes(x=4.25, label="HFIAA", y=.055), angle=90)
-```
-
-Table \@ref(tab:ztrax-summary-stats) provides summary statistics for the real estate assessment and transactions data from ZTRAX used to construct the panel. 
-
-```{r ztrax-summary-stats}
-# Summary stats table of homes and transactions
-# Average transaction probability in the sample: 
-tzy_panel[in_sample == TRUE, sum(transaction_count) / sum(properties_count)]
 ```
 
 ## Constructed Panel
 
 My constructed sample is comprised of arm's length transactions of single family homes in North Carolina special flood hazard areas (SFHA), using data from 2009–2016. Because the flood insurance data are not available at the individual home level, I aggregate the data to the level of census tract, flood zone, and year of home construction. From these data, I construct a yearly panel of these cells of homes, defining the fraction of homes in each cell that were sold and hold a flood insurance policy, as well as whether the homes were exposed to a flood event. Since selling a home is often a time consuming process, I look across multiple years to find effects, so I create lagged variables of flood events and insurance policies. Because the range of years in my panel is limited, the choice of lags limits the sample size of the panel. With 2 lags, I can consider sales from 2011–2016, while 3 lags restricts the panel to 2012–2016. I restrict the panel to include only homes built before 2009, so no homes enter the dataset in the middle of the analysis period. Because the NFIP data extends beyond the housing data, I also create one year lead variables of flood events and insurance policies as a check for pretrends without reducing the sample size of the panel. Table \@ref(tab:panel-summary-stats) provides summary statistics for the panel as used in this analysis.
 
-```{r panel-summary-stats}
+```{r panel-summary-stats, echo=FALSE}
 # panel descriptive statistics table. n, T, N, average homes per cell, average policies per cell
+# Average transaction probability in the sample: 
+sumstats <- tzy_panel[sample_2L == TRUE, 
+          .(`Fraction of homes sold per year`= sum(transaction_count) / sum(properties_count),
+            `Fraction of homes exposed to flood events` = sum(flood_event) / sum(properties_count),
+            `Fraction of homes holding flood insurance` = sum(policies_count) / sum(properties_count),
+            `Number of property cells` = uniqueN(paste(panel_id, YearBuilt, sep="_")),
+            `Number of years in the panel (two lags)` = uniqueN(year),
+            `Total sample size` = .N,
+            `Average number of homes per cell` = sum(properties_count) / .N,
+            `Average number of insurance policies per cell` = sum(policies_count) / .N,
+            `Fraction of homes adapted` = sum(adapted * properties_count) / sum(properties_count))]
+sumstats <- data.frame(t(sumstats))
+colnames(sumstats) <- ""
+# set.caption("(\#panel-summary-stats) Summary statistics of the analysis panel.")
+kable(sumstats, digits = 4, caption = "Summary statistics of the analysis panel.", 
+      format.args=list(big.mark = ",", scientific=FALSE, drop0trailing=TRUE), col.names = NULL)
 ```
 
 To inspect the variation of home sales relative to the flood event, we run a reduced form regression of transaction probability by years since (or before, for F1) a flood event, controlling for adapted status. The results of this reduced form regression are shown in table \@ref(tab:reduced-form), and indicate at least some responsiveness to flooding. Potentially concerningly, adapted homes appear to be slightly less likely to be sold when a flood event occurs in the _subsequent_ year, a coefficient we would expect to find to be 0. This result may point to some unexplained variation in transaction probability driven by trends from observation year or year of home construction that are not captured by the fixed effects. 
 
-```{r transprob-byflood, echo=FALSE, warning=FALSE}
+```{r transprob-byflood, echo=FALSE, warning=FALSE, results='asis'}
 transprob_flood <- felm(transaction_prob ~ adapted*flood_event + adapted*flood_L1 + adapted*flood_L2 
                         + adapted*flood_L3 + adapted*flood_F1 | panel_id + year + YearBuilt | 0 | censusTract, 
                         data = tzy_panel[sample_3L == TRUE])
@@ -121,7 +136,8 @@ stargazer(transprob_flood, type=ifelse(knitr::is_latex_output(), "latex", ifelse
           title="Reduced Form: Home Sale Probability Against Flood Events and Adaptation", 
           dep.var.caption = "Probability of Home Sale", dep.var.labels.include = FALSE, 
           df=FALSE, digits = 4, header = FALSE, keep.stat = c("n", "rsq"), label="tab:reduced-form",
-          notes = "Includes fixed effects for census tract x flood zone, observation year, and home construction year.")
+          notes = "\\parbox[t]{0.5\\textwidth}{Includes fixed effects for census tract x flood zone, observation year, and home construction year.}",
+          notes.align = "l")
 ```
 
 # Model
@@ -188,7 +204,7 @@ stargazer(OLS_transprob_reg_2, OLS_transprob_reg_3, OLS_transprob_reg_2_lead, OL
           title="Home Sale Probability Against Flood Events and Insurance, OLS", 
           dep.var.caption = "Probability of Home Sale", dep.var.labels.include = FALSE, label="tab:OLS-output",
           column.sep.width = "2pt", df=FALSE, digits = 4, header = FALSE, keep.stat = c("n", "rsq"),
-          notes = "All regressions include fixed effects for census tract x flood zone and observation year, and standard errors are clustered at the census tract.")
+          notes = "\\parbox[t]{0.5\\textwidth}{All regressions include fixed effects for census tract x flood zone and observation year, and standard errors are clustered at the census tract.}")
 ```
 
 ## IV
@@ -247,7 +263,7 @@ stargazer(transprob_reg_2, transprob_reg_3, transprob_reg_2_lead, transprob_reg_
           title="Home Sale Probability Against Flood Events and Insurance, Instrumenting for Insurance", 
           dep.var.caption = "Probability of Home Sale", dep.var.labels.include = FALSE, 
           column.sep.width = "2pt", df=FALSE, digits = 4, header = FALSE, keep.stat = "n", label="tab:IV-output",
-          notes = "All regressions include fixed effects for census tract x flood zone and observation year, and standard errors are clustered at the census tract.")
+          notes = "\\parbox[t]{0.5\\textwidth}{All regressions include fixed effects for census tract x flood zone and observation year, and standard errors are clustered at the census tract.}", font.size = "small")
 ```
 
 # Discussion
