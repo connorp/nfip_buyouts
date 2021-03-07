@@ -32,6 +32,7 @@ setorder(nchomes, ImportParcelID, record_date)
 nchomes <- unique(nchomes, by=c("ImportParcelID", "record_year"), fromLast=TRUE)
 
 sfha_homes <- nchomes[SFHA_TF == TRUE]
+rm(nchomes)
 
 modal_val <- function(confusingVar) {
   if (length(confusingVar) == uniqueN(confusingVar)) return(tail(confusingVar, n = 1))
@@ -82,7 +83,7 @@ nctrans_armslen[, transaction_obs := TRUE]
 panel_frame <-CJ(ImportParcelID = sfha_homes[, unique(ImportParcelID)], year = nctrans_armslen[, unique(year)])
 keepvars <- c("ImportParcelID", "date", "year", "SalesPriceAmount", "mortgage_nfip_req", "transaction_obs")
 nctrans_panel <- merge(nctrans_armslen[, ..keepvars], panel_frame, all = TRUE)
-rm(nctrans_armslen, panel_frame)
+rm(nctrans_armslen, panel_frame, nctrans)
 
 ## We apply the assessor data onto the transaction panel, assuming the old assessment records
 ## hold until a new one occurs
