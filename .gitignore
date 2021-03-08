@@ -31,4 +31,4 @@ vignettes/*.pdf
 *.nb.html
 *.log
 *.bib
-
+*.tex
