@@ -1,27 +1,17 @@
 ---
 title: Flood Insurance Impact on Post-Flood Home Sales
 author: "Connor P. Jackson[^disclaim]"
-date: "`r format(Sys.time(), '%B %d, %Y - %H:%M %Z')`"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
 output:
   bookdown::pdf_document2:
     fig_caption: yes
-    toc: yes
-    toc_depth: 1
+    toc: no
     number_sections: yes
     keep_tex: yes
     df_print: !expr pander::pander
   bookdown::html_notebook2:
     fig_caption: yes
     number_sections: yes
-    df_print: kable
-  bookdown::html_document2:
-    code_folding: show
-    fig_caption: yes
-    highlight: textmate
-    number_sections: yes
-    toc: yes
-    toc_depth: 2
-    toc_float: yes
     df_print: kable
 bibliography: [library.bib, pkg-refs.bib]
 header-includes: \usepackage{setspace}
@@ -65,11 +55,13 @@ source("merge_and_analysis.R")
 
 Flood damage prevention and recovery has been a major expenditure for every level of government in the United States for nearly a century, and climate change is leading to floods of increased frequency and intensity. Decades of primarily local and state policy have encouraged development of flood plains and coastal zones, creating substantial new private wealth financed by risk exposure for the federal government [@Gaul2019]. The US continues to spend vast amounts on various subsidies for landowners in flood prone areas: from federally underwritten flood insurance at below actuarially fair prices to major capital investments for dredging, levee construction and maintenance, and coastal erosion prevention. Taken together, these subsidies and pro-development policies has led to a large number of properties in flood-prone areas that are worth less than the ongoing stream of subsidy involved in maintaining them.
 
-The most severe examples of this problem are so called severe repetitive loss (SRL) properties [@NationalFloodInsuranceProgram2020]. These structures, usually older homes not adapted to withstand regular flood damage, are insured by the National Flood Insurance Program (NFIP), and have received repeated claim payouts that exceed the value of the home, a situation that is only possible because the NFIP sets premiums below actuarially fair levels. The NFIP was originally established by Congress to shift some of the cost and risk of development in flood prone areas from the government onto property owners. However, these pricing practices have left the NFIP with a substantial debt load, and a deficit that currently exceeds $1 billion per year [@CBO2017]. The ongoing fiscal problems of the NFIP along with its conflicting mandates of moving risk from the government to homeowners and maintaining affordability has been a topic of research and discussion for more than a decade [@Miller2019; @NationalAcademiesofSciencesandMedicine2016]. 
+The most severe examples of this problem are so called severe repetitive loss (SRL) properties [@NationalFloodInsuranceProgram2020]. These structures, usually older homes not adapted by elevation to withstand regular flood damage, are insured by the National Flood Insurance Program (NFIP), and have received repeated claim payouts that exceed the value of the home, a situation that is only possible because the NFIP sets premiums below actuarially fair levels. A private insurer faced with this situation would either refuse to cover the property, or upon the filing of a claim, declare the property a total loss, much as car insurers will "total" a car following a particularly damaging crash. However, the NFIP is required by statute to provide  The NFIP was originally established by Congress to shift some of the cost and risk of development in flood prone areas from the government onto property owners. However, these pricing practices have left the NFIP with a substantial debt load, and a deficit that currently exceeds $1 billion per year [@CBO2017]. The ongoing fiscal problems of the NFIP along with its conflicting mandates of moving risk from the government to homeowners and maintaining affordability has been a topic of research and discussion for more than a decade [@Miller2019; @NationalAcademiesofSciencesandMedicine2016]. 
 
 Congress has made several attempts to reduce the working deficit of the NFIP, and any such plan will need to address SRL properties. It would be welfare improving to simply buy these properties and tear them down. Doing so would avoid the substantial insurance losses and be a net gain to society, without even having to consider the additional avoided costs for infrastructure, US Army Corps of Engineers management projects, etc. The Federal Emergency Management Agency (FEMA) has pursued buyouts of SRL properties in recent years, but these proceedings are slow, costly, and politically unpopular [@Weber2019; @Salvesen2018]. To address this problem on a broad scale, policymakers will need to think carefully about how homeowners choose whether to rebuild or relocate in the wake of a disaster. By identifying property owners who are most likely to sell their homes following a flood, the government can design a policy to purchase those homes themselves, rather than a new private buyer, and then permanently remove the home from the market. 
 
-This paper attempts to provide evidence to support that policymaking process by exploring how holding flood insurance impacts a homeowner's decision to sell their home in the wake of a flood. To answer this question, I combine several detailed micro datasets: real estate assessment and transaction records from county public records, collected in Zillow's ZTRAX database [@ZillowGroup2020], and NFIP data on flood policies written and claims filed. Using these data, I construct a panel of home transactions, flood events, and flood insurance takeup for 2009–2016 to estimate with various lags both the main effect of floods on home sale probability, and the interaction effect of holding flood insurance and experiencing a flood on home sale probability. Because the choice of insurance takeup is endogenous, I instrument for insurance using exogenous price variation caused by two pieces of federal legislation: the Biggert Waters Flood Insurance Reform Act of 2012 and the Homeowner Flood Insurance Affordability Act of 2014. This approach leads to estimates of questionable validity due to potential collinearity between the instrument and year fixed effects, but they suggest that homeowners who hold flood insurance may be less likely to sell their homes following a flood. If refined and confirmed, these results would suggest, perhaps unsurprisingly, that the current structure of NFIP policies provide a particularly acute incentive to remain in flood zones following a flood event, and policymakers will need to think holistically about these incentives when designing a buyout program. 
+This paper attempts to provide evidence to support that policymaking process by exploring how holding flood insurance impacts a homeowner's decision to sell their home in the wake of a flood. To answer this question, I combine several detailed micro datasets: real estate assessment and transaction records from county public records, collected in Zillow's ZTRAX database [@ZillowGroup2020], and NFIP data on flood policies written and claims filed. Using these data, I construct a panel of home transactions, flood events, and flood insurance takeup for 2009–2016 to estimate with various lags both the main effect of floods on home sale probability, and the interaction effect of holding flood insurance and experiencing a flood on home sale probability. The matching process to combine these disparate datasets is imperfect, therefore the panel does not identify individual homes in each year. Rather, the unit of analysis is, by observation year, the set of homes in the same census tract and flood zone, and constructed in the same year.
+
+Because the choice of insurance takeup is endogenous, I instrument for insurance using exogenous price variation caused by two pieces of federal legislation: the Biggert Waters Flood Insurance Reform Act of 2012 and the Homeowner Flood Insurance Affordability Act of 2014. This approach leads to estimates of questionable validity due to potential collinearity between the instrument and year fixed effects, but they suggest that homeowners who hold flood insurance may be less likely to sell their homes following a flood. If refined and confirmed, these results would suggest, perhaps unsurprisingly, that the current structure of NFIP policies provide a particularly acute incentive to remain in flood zones following a flood event, and policymakers will need to think holistically about these incentives when designing a buyout program. 
 
 This paper contributes to a growing literature on consumer responses to natural disasters, particularly floods, and the welfare and policy implications of existing flood insurance rate structures. @Gallagher2014 shows that insurance takeup is not perfectly rational, and in fact depends on salience of flood risk. @Wagner2019 tests for selection in the flood insurance market, and describes how risk misperception and other frictions in insurance takeup distort demand, and thus lead to different welfare effects of reforms than a standard expected utility framework would suggest. @Peralta2019 explore the location sorting effects of subsidized flood insurance. This paper most closely builds on the work of @Zivin2020, who test directly for the impact of hurricanes on housing markets. The authors look for impacts on housing prices and transaction probability of hurricane-force winds, and also explore the subsequent demographic changes of the new home buyers. This research follows the methodology of @Zivin2020, but uses flood events rather than wind exposure, and is not limited to high-damage events like hurricanes. 
 
@@ -79,15 +71,15 @@ This research is built upon two primary data sources: flood insurance policies, 
 
 ## Flood Insurance Policies and Claims
 
-FEMA publishes deidentified micro data on all [NFIP policies](https://www.fema.gov/openfema-data-page/openfema-dataset-fima-nfip-redacted-policies--v1) underwritten by the federal government, which covers nearly all flood insurance policies written in the United States. The data describes the amount of coverage, premiums and fees, deductibles, and attributes about the covered property. Properties are identified down to the census tract, and also have flood zone and year of construction, which I use to match with the real estate data. Flood insurance policy data are available for the years `r policies[, min(year(policyEffectiveDate))]`–`r policies[, max(year(policyEffectiveDate))]`. I discard policies that cover only home contents and not the structure itself. Figure \@ref(fig:first-stage-graph) shows insurance takeup over time, with the two major reforms to insurance premiums, Biggert-Waters and HFIAA, indicated. Takeup is shown separately for adapted and non-adapted homes, as they are subject to different premium rate schedules and different price shocks.
+FEMA publishes deidentified micro data on all [NFIP policies](https://www.fema.gov/openfema-data-page/openfema-dataset-fima-nfip-redacted-policies--v1) underwritten by the federal government, which covers nearly all flood insurance policies written in the United States. The data describes the amount of coverage, premiums and fees, deductibles, and attributes about the covered property. Properties are identified down to the census tract, and also have flood zone and year of construction, which I use to match with the real estate data. Flood insurance policy data are available for the years `r policies[, min(year(policyEffectiveDate))]`–`r policies[, max(year(policyEffectiveDate))]`. I discard policies that cover only home contents and not the structure itself. Figure \@ref(fig:first-stage-graph) shows insurance takeup over time, with the two major reforms to insurance premiums, Biggert-Waters and HFIAA, indicated. Takeup is shown separately for adapted and non-adapted homes, as they are subject to different premium rate schedules and different price shocks. Adapted homes are those that were constructed (or substantially renovated) after the publication of their area's first flood insurance rate map (FIRM). New or renovated homes in special flood hazard areas with an existing, published FIRM are required to be adapted by elevating the lowest occupied level of the home above a pre-defined "base flood elevation" to reduce the risk of damage from flooding.
 
 The [NFIP claims data](https://www.fema.gov/openfema-data-page/fima-nfip-redacted-claims-v1) tabulate every claim filed with the NFIP in the state from `r claims[, min(year(dateOfLoss))]` through `r claims[, max(year(dateOfLoss))]`. The data include details about the insured property, the insurance coverage, the loss event, and subsequent claim and payout. I discard claims that cover only loss of contents (either due to the policyholder not holding any building coverage, or not submitting a claim for building damage), as well as those with listed payouts that exceed the maximum coverage of $250,000. The claims data are used to identify which properties were exposed to flooding in a given year. Since a given property's vulnerability to flood damage is endogenous, through defensive investments, home elevation, etc., I define exposure to flooding by indicating whether a flood claim was filed within the intersection of a census tract and flood zone in each year. 
 
 Finally, I also use the [national flood hazard layer](https://www.fema.gov/flood-maps/national-flood-hazard-layer) geospatial database to assign individual properties to flood zones, to allow matching with the policies and claims data.
 
 ```{r first-stage-graph, echo=FALSE, fig.cap="Flood insurance adoption, driven by Biggert-Waters and HFIAA, separately for adapted and non-adapted homes. The key source of variation in my first stage.", fig.dim=c(5,3.5)}
-firststage <- tzy_panel[in_sample == TRUE, .(polfrac = sum(policies_count) / sum(properties_count)), keyby = .(year, adapted)]
-ggplot(firststage, aes(x=year, y=polfrac)) + geom_point(aes(color = adapted, shape=adapted)) + geom_vline(xintercept=4.5) + geom_vline(xintercept=6.5) + ggtitle("Flood Insurance Adoption Over Time") + ylab("Fraction of Homes with Flood Insurance") + geom_text(aes(x=4.25, label="Biggert Waters Act", y=.03), angle=90)  + geom_text(aes(x=6.25, label="HFIAA", y=.03), angle=90)
+firststage <- tzy_panel[in_sample == TRUE, .(polfrac = sum(policies_count) / sum(properties_count)), keyby = .(year, adapted_text)]
+ggplot(firststage, aes(x=year, y=polfrac)) + geom_point(aes(color = adapted_text, shape=adapted_text)) + geom_vline(xintercept=4.5) + geom_vline(xintercept=6.5) + ggtitle("Flood Insurance Adoption Over Time") + ylab("Fraction of Homes with Flood Insurance") + geom_text(aes(x=4.25, label="Biggert Waters Act", y=.03), angle=90)  + geom_text(aes(x=6.25, label="HFIAA", y=.03), angle=90)
 ```
 
 ## Housing Assessment and Transactions
@@ -97,8 +89,8 @@ The [ZTRAX data](https://www.zillow.com/research/ztrax/) are a real estate datab
 The transaction data contains information about every real estate transaction recorded for the parcels in the assessor data. The records include the date and type of transaction, information about the buyer, seller, and lender, if applicable, sale price and any taxes, and mortgage information. These data require extensive filtering to identify the set of records that correspond to "arm's length" transactions that correspond to true home sales, rather than refinancing, transfers to family members, or liens. Data are available for transactions from `r nctrans_panel[, min(year, na.rm = TRUE)]` through `r nctrans_panel[, max(year, na.rm = TRUE)]`. I discard homes that were built in the same year as their area's first flood insurance rate map (FIRM) which determines adaptation requirements, since the requirement within the same year is ambiguous, as well as homes with unrecorded years of construction. Figure \@ref(fig:trans-prob) shows the fraction of homes sold in a given sample year, separately for adapted and nonadapted homes. Depending on the number of lags, transactions in 2011 are sometimes excluded from the analysis. 
 
 ```{r trans-prob, echo=FALSE, fig.cap="Graph of home sale probability over time, separately for adapted and nonadapted homes.", fig.dim=c(5,3.5)}
-transtime <- tzy_panel[sample_2L == TRUE, .(transfrac = sum(transaction_count) / sum(properties_count)), keyby = .(year, adapted)]
-ggplot(transtime, aes(x=year, y=transfrac)) + geom_point(aes(color = adapted, shape=adapted)) + geom_vline(xintercept=2.5) + geom_vline(xintercept=4.5) + ggtitle("Home Sale Probability Over Time") + ylab("Probability of Home Sale") + geom_text(aes(x=2.25, label="Biggert Waters Act", y=.055), angle=90)  + geom_text(aes(x=4.25, label="HFIAA", y=.055), angle=90)
+transtime <- tzy_panel[sample_2L == TRUE, .(transfrac = sum(transaction_count) / sum(properties_count)), keyby = .(year, adapted_text)]
+ggplot(transtime, aes(x=year, y=transfrac)) + geom_point(aes(color = adapted_text, shape=adapted_text)) + geom_vline(xintercept=2.5) + geom_vline(xintercept=4.5) + ggtitle("Home Sale Probability Over Time") + ylab("Probability of Home Sale") + geom_text(aes(x=2.25, label="Biggert Waters Act", y=.055), angle=90)  + geom_text(aes(x=4.25, label="HFIAA", y=.055), angle=90)
 ```
 
 ## Constructed Panel
@@ -130,6 +122,7 @@ To inspect the variation of home sales relative to flood events, I run a reduced
 transprob_flood <- felm(transaction_prob ~ adapted*flood_event + adapted*flood_L1 + adapted*flood_L2 
                         + adapted*flood_L3 + adapted*flood_F1 | panel_id + year + YearBuilt | 0 | censusTract, 
                         data = tzy_panel[sample_3L == TRUE])
+# summary(transprob_flood)
 stargazer(transprob_flood, type=ifelse(knitr::is_latex_output(), "latex", ifelse(knitr::is_html_output(),"html" , "text")), 
           covariate.labels = c("adaptation req.", "flood (concurrent)", "flood (1 year ago)", "flood (2 years ago)",
                                "flood (3 years ago)", "flood (next year)", "flood x adaptation (concurrent)",
@@ -146,9 +139,93 @@ stargazer(transprob_flood, type=ifelse(knitr::is_latex_output(), "latex", ifelse
 
 My research question is twofold: first, does experiencing a flood lead homeowners to sell their properties, and second, does holding flood insurance mediate this effect. To explore these questions, I apply an event study framework to this panel dataset. The main estimating equation is
 $$P(transaction_{lit}) = \sum_{\tau} \left[\alpha_{\tau} Insurance_{lit+\tau} + \beta_{\tau} Flood_{lt+\tau} + \gamma_{\tau} (Flood_{lt+\tau} \times Insurance_{lit+\tau}) \right] + \delta_l + \delta_t + \varepsilon_{lit}$$
-where $l$ indexes locations (the intersection of a census tract and a flood zone), $i$ indexes the set of homes constructed in the same year, and $t$ indexes the year of observation. The lag indexer $\tau$ takes on values from -3 (a three year lag) to +1 (a one year lead). The model includes location and year fixed effects, and standard errors are clustered at the census tract level. The outcome variable of this linear probability model is the sale probability of homes in the cell in a given year, and the regressors include an indicator for a flood event occurring, $Flood$, and the fraction of homes with flood insurance, $Insurance$, in the given observation year (with the relevant lags). 
+The unit of analysis is a set of homes in a particular census tract and flood zone, constructed in the same year, by year of observation. This panel structure is the closest feasible approximation to a house-year panel, given the limitations of my imperfect matching strategy. In the estimating equation, $l$ indexes locations (the intersection of a census tract and a flood zone), $i$ indexes the set of homes constructed in the same year, and $t$ indexes the year of observation. Together, the subscript $lit$ indexes a single observation. The lag indexer $\tau$ takes on values from -3 (a three year lag) to +1 (a one year lead). The model includes location and year fixed effects, and standard errors are clustered at the census tract level. The outcome variable of this linear probability model is the sale probability of homes in the cell in a given year, and the regressors include an indicator for a flood event occurring, $Flood$, and the fraction of homes with flood insurance, $Insurance$, in the given observation year (with the relevant lags). 
 
 Because the choice to purchase flood insurance is endogenous, I instrument for insurance takeup using two exogenous policy shocks that changed flood insurance rate schedules. The Biggert Waters Flood Insurance Reform Act of 2012 and the Homeowner Flood Insurance Affordability Act of 2014 made several changes to NFIP rate schedules starting in 2013 and 2015, respectively. Some of the rate changes applied to all insured homes, while others applied differently to adapted and non-adapted homes. Homes built or substantially renovated after the adoption of the first FIRM panel covering the property are required to be adapted in their design to reduce the risk of flood damage, primarily through elevation of the lowest occupied level of the home. These policy changes will provide exogenous policy variation to identify the effect of holding flood insurance. The adapted status is defined by the year of home construction relative to the year of FIRM adoption. 
+
+```{r first-stage-policy, include=FALSE}
+FS_policy_prob <- felm(policy_prob ~ flood_event*(reg_reform:adapted) + flood_L1*(reg_reform_L1:adapted) 
+                                + flood_L2*(reg_reform_L2:adapted) 
+                                + flood_F1*(reg_reform_F1:adapted) + adapted | panel_id + year + YearBuilt
+                             | 0 | censusTract, data = tzy_panel[sample_2L == TRUE])
+# summary(FS_policy_prob)
+```
+
+```{r first-stage-policy-L1, include=FALSE}
+FS_policy_prob_L1 <- felm(policy_prob_L1 ~ flood_event*(reg_reform:adapted) + flood_L1*(reg_reform_L1:adapted) 
+                                + flood_L2*(reg_reform_L2:adapted) 
+                                + flood_F1*(reg_reform_F1:adapted) + adapted | panel_id + year + YearBuilt
+                             | 0 | censusTract, data = tzy_panel[sample_2L == TRUE])
+# summary(FS_policy_prob_L1)
+```
+
+```{r first-stage-policy-L2, include=FALSE}
+FS_policy_prob_L2 <- felm(policy_prob_L2 ~ flood_event*(reg_reform:adapted) + flood_L1*(reg_reform_L1:adapted) 
+                                + flood_L2*(reg_reform_L2:adapted) 
+                                + flood_F1*(reg_reform_F1:adapted) + adapted | panel_id + year + YearBuilt
+                             | 0 | censusTract, data = tzy_panel[sample_2L == TRUE])
+# summary(FS_policy_prob_L2)
+```
+
+```{r first-stage-policy-F1, include=FALSE}
+FS_policy_prob_F1 <- felm(policy_prob_F1 ~ flood_event*(reg_reform:adapted) + flood_L1*(reg_reform_L1:adapted) 
+                                + flood_L2*(reg_reform_L2:adapted) 
+                                + flood_F1*(reg_reform_F1:adapted) + adapted | panel_id + year + YearBuilt
+                             | 0 | censusTract, data = tzy_panel[sample_2L == TRUE])
+# summary(FS_policy_prob_F1)
+```
+
+```{r first-stage-flpl, include=FALSE}
+FS_policy_fld_prob <- felm(flooded_insured ~ flood_event*(reg_reform:adapted) + flood_L1*(reg_reform_L1:adapted) 
+                                + flood_L2*(reg_reform_L2:adapted) 
+                                + flood_F1*(reg_reform_F1:adapted) + adapted | panel_id + year + YearBuilt
+                             | 0 | censusTract, data = tzy_panel[sample_2L == TRUE])
+# summary(FS_policy_fld_prob)
+```
+
+```{r first-stage-flpl-L1, include=FALSE}
+FS_policy_fld_L1 <- felm(flooded_insured_L1 ~ flood_event*(reg_reform:adapted) + flood_L1*(reg_reform_L1:adapted) 
+                                + flood_L2*(reg_reform_L2:adapted) 
+                                + flood_F1*(reg_reform_F1:adapted) + adapted | panel_id + year + YearBuilt
+                             | 0 | censusTract, data = tzy_panel[sample_2L == TRUE])
+# summary(FS_policy_fld_L1)
+```
+
+```{r first-stage-flpl-L2, include=FALSE}
+FS_policy_fld_L2 <- felm(flooded_insured_L2 ~ flood_event*(reg_reform:adapted) + flood_L1*(reg_reform_L1:adapted) 
+                                + flood_L2*(reg_reform_L2:adapted) 
+                                + flood_F1*(reg_reform_F1:adapted) + adapted | panel_id + year + YearBuilt
+                             | 0 | censusTract, data = tzy_panel[sample_2L == TRUE])
+# summary(FS_policy_fld_L2)
+```
+
+```{r first-stage-flpl-F1, include=FALSE}
+FS_policy_fld_F1 <- felm(flooded_insured_F1 ~ flood_event*(reg_reform:adapted) + flood_L1*(reg_reform_L1:adapted) 
+                                + flood_L2*(reg_reform_L2:adapted) 
+                                + flood_F1*(reg_reform_F1:adapted) + adapted | panel_id + year + YearBuilt
+                             | 0 | censusTract, data = tzy_panel[sample_2L == TRUE])
+# summary(FS_policy_fld_F1)
+```
+
+```{r First-stage-output, echo=FALSE, warning=FALSE, echo=FALSE, results='asis'}
+first_stage_covars <- c("flood (concurrent)", "flood (1 year ago)", "flood (2 years ago)", 
+                    "flood (next year)", "home is adapted", "adapted x year > 2012",
+                    "adapted x year > 2012 (1 year ago)", "adapted x year > 2012 (2 years ago)",
+                    "adapted x year > 2012 (next year)", "flood x adapted x year > 2012",
+                    "flood x adapted x year > 2012 (1 year ago)", 
+                    "flood x adapted x year > 2012 (2 years ago)",
+                    "flood x adapted x year > 2012 (next year)")
+first_stage_deps <- c("concurrent", "1 year ago", "2 years ago", "next year")
+stargazer(FS_policy_prob, FS_policy_prob_L1, FS_policy_prob_L2, FS_policy_prob_F1,
+          FS_policy_fld_prob, FS_policy_fld_L1, FS_policy_fld_L2, FS_policy_fld_F1,
+          type=ifelse(knitr::is_latex_output(), "latex", ifelse(knitr::is_html_output(),"html" , "text")), 
+          covariate.labels = first_stage_covars, 
+          title="First Stage Regressions: Instrumenting for Insurance Takeup", 
+          dep.var.caption = "Probability of Insurance Takeup", column.labels = c("Hold Insurance", "Hold Insurance x Flood"),
+          column.separate = c(4,4), dep.var.labels = rep(first_stage_deps, 2), report="vc*",
+          column.sep.width = "1pt", df=FALSE, digits = 4, header = FALSE, keep.stat = "rsq", label="tab:first-stage-output",
+          notes = "\\parbox[t]{0.5\\textwidth}{All regressions include fixed effects for census tract x flood zone, observation year, and construction year, and standard errors are clustered at the census tract. Calculated using the larger two-lag sample}", font.size = "small")
+```
 
 This econometric approach requires two identification assumptions: first, the probability of a home experiencing flooding is exogenous, conditional on census tract, flood zone, and adaptation status. Second, any time trends in transaction probability must be common to adapted and non-adapted homes. Without common time trends, none of the variation in prices from the policy changes will be exogenous, even the differential variation between adapted and non-adapted homes, violating the exclusion restriction. 
 
@@ -159,15 +236,15 @@ This econometric approach requires two identification assumptions: first, the pr
 ```{r OLS-2-noF, include=FALSE}
 # Two Lags, no Leads
 OLS_transprob_reg_2 <- felm(transaction_prob ~ flood_event*policy_prob + flood_L1*policy_prob_L1 
-                        + flood_L2*policy_prob_L2 | panel_id + year 
+                        + flood_L2*policy_prob_L2 | panel_id + year + YearBuilt + adapted
                         | 0 | censusTract, data = tzy_panel[sample_2L == TRUE])
-# summary(OLS_transprob_reg_2)
+summary(OLS_transprob_reg_2)
 ```
 
 ```{r OLS-3-noF, include=FALSE}
 # Three Lags, No Leads
 OLS_transprob_reg_3 <- felm(transaction_prob ~ flood_event*policy_prob + flood_L1*policy_prob_L1 
-                        + flood_L2*policy_prob_L2 + flood_L3*policy_prob_L3 | panel_id + year 
+                        + flood_L2*policy_prob_L2 + flood_L3*policy_prob_L3 | panel_id + year + YearBuilt + adapted
                         | 0 | censusTract, data = tzy_panel[sample_3L == TRUE])
 # summary(OLS_transprob_reg_3)
 ```
@@ -175,17 +252,9 @@ OLS_transprob_reg_3 <- felm(transaction_prob ~ flood_event*policy_prob + flood_L
 ```{r OLS-2-F, include=FALSE}
 # Two Lags, One Lead
 OLS_transprob_reg_2_lead <- felm(transaction_prob ~ flood_event*policy_prob + flood_L1*policy_prob_L1 
-                        + flood_L2*policy_prob_L2 + flood_F1*policy_prob_F1 | panel_id + year 
+                        + flood_L2*policy_prob_L2 + flood_F1*policy_prob_F1 | panel_id + year + YearBuilt + adapted
                              | 0 | censusTract, data = tzy_panel[sample_2L == TRUE])
 # summary(OLS_transprob_reg_2_lead)
-```
-
-```{r OLS-3-F, include=FALSE}
-# Three Lags, One Lead
-OLS_transprob_reg_3_lead <- felm(transaction_prob ~ flood_event*policy_prob + flood_L1*policy_prob_L1 
-                        + flood_L2*policy_prob_L2 + flood_L3*policy_prob_L3 + flood_F1*policy_prob_F1 | panel_id + year 
-                             | 0 | censusTract, data = tzy_panel[sample_2L == TRUE])
-# summary(OLS_transprob_reg_3_lead)
 ```
 
 I first consider the results of our models without instrumenting for insurance takeup. To explore any time delays in the effect of flood events and insurance, I run four regressions, varying the number of lag years between two and three (which changes the available sample size of the model) and whether I include a one year lead variable (which has no impact on the sample). Table \@ref(tab:OLS-output) shows the regression outputs for these uninstrumented models. The lags are indexed from the perspective of the year of the potential sale. For example, the _flood (2 years ago)_ variable considers whether homes are more likely to be sold if they had flooded two years prior, or perhaps more naturally, whether homes are more likely to be sold two years after a flood.
@@ -200,58 +269,50 @@ covariate_labs <- c("flood (concurrent)", "flood (1 year ago)", "flood (2 years 
                     "insurance (3 years ago)","insurance (next year)", "flood x insurance (concurrent)",
                     "flood x insurance (1 year ago)", "flood x insurance (2 years ago)",
                     "flood x insurance (3 years ago)", "flood x insurance (next year)")
-stargazer(OLS_transprob_reg_2, OLS_transprob_reg_3, OLS_transprob_reg_2_lead, OLS_transprob_reg_3_lead, 
+stargazer(OLS_transprob_reg_2, OLS_transprob_reg_3, OLS_transprob_reg_2_lead, 
           type=ifelse(knitr::is_latex_output(), "latex", ifelse(knitr::is_html_output(),"html" , "text")),
           covariate.labels = covariate_labs, order = c(1,3,5,7,9,2,4,6,8,10,11:15), 
           title="Home Sale Probability Against Flood Events and Insurance, OLS", 
           dep.var.caption = "Probability of Home Sale", dep.var.labels.include = FALSE, label="tab:OLS-output",
           column.sep.width = "2pt", df=FALSE, digits = 4, header = FALSE, keep.stat = c("n", "rsq"),
-          notes = "\\parbox[t]{0.5\\textwidth}{All regressions include fixed effects for census tract x flood zone and observation year, and standard errors are clustered at the census tract.}", font.size = "small")
+          notes = "\\parbox[t]{0.5\\textwidth}{All regressions include fixed effects for census tract x flood zone, observation year, construction year, and adaptation status. Standard errors are clustered by census tract.}", font.size = "small")
 ```
 
 ## IV
 
 ```{r IV-2-noF, include=FALSE}
 # Two Lags, no Leads
-transprob_reg_2 <- felm(transaction_prob ~ flood_event + flood_L1 + flood_L2 | panel_id + year
+transprob_reg_2 <- felm(transaction_prob ~ flood_event + flood_L1 + flood_L2 | panel_id + year + YearBuilt + adapted
                         | (policy_prob | policy_prob_L1 | policy_prob_L2 | flooded_insured 
                            | flooded_insured_L1 | flooded_insured_L2 
-                           ~ flood_event:reg_reform*adapted + flood_L1:reg_reform_L1*adapted 
-                           + flood_L2:reg_reform_L2:adapted) | censusTract, data = tzy_panel[sample_2L == TRUE])
-# summary(transprob_reg_2)
+                           ~ flood_event:reg_reform:adapted + reg_reform:adapted + flood_L1:reg_reform_L1:adapted
+                           + reg_reform_L1:adapted + flood_L2:reg_reform_L2:adapted + reg_reform_L2:adapted) 
+                        | censusTract, data = tzy_panel[sample_2L == TRUE], exactDOF = TRUE)
+summary(transprob_reg_2)
 ```
 
 ```{r IV-3-noF, include=FALSE}
 # Three Lags, No Leads
-transprob_reg_3 <- felm(transaction_prob ~ flood_event + flood_L1 + flood_L2 + flood_L3 | panel_id + year 
+transprob_reg_3 <- felm(transaction_prob ~ flood_event + flood_L1 + flood_L2 + flood_L3 | panel_id + year + YearBuilt + adapted
                         | (policy_prob | policy_prob_L1 | policy_prob_L2 | policy_prob_L3 
                            | flooded_insured | flooded_insured_L1 | flooded_insured_L2 | flooded_insured_L3 
-                           ~ flood_event:reg_reform*adapted + flood_L1:reg_reform_L1*adapted 
-                           + flood_L2:reg_reform_L2:adapted + flood_L3:reg_reform_L3:adapted) 
-                        | censusTract, data = tzy_panel[sample_3L == TRUE])
+                           ~ flood_event:reg_reform:adapted + reg_reform:adapted + flood_L1:reg_reform_L1:adapted
+                           + reg_reform_L1:adapted + flood_L2:reg_reform_L2:adapted + reg_reform_L2:adapted 
+                           + flood_L3:reg_reform_L3:adapted + reg_reform_L3:adapted) 
+                        | censusTract, data = tzy_panel[sample_3L == TRUE], exactDOF = TRUE)
 # summary(transprob_reg_3)
 ```
 
 ```{r IV-2-F, include=FALSE}
 # Two Lags, One Lead
-transprob_reg_2_lead <- felm(transaction_prob ~ flood_event + flood_L1 + flood_L2 + flood_F1 | panel_id + year 
+transprob_reg_2_lead <- felm(transaction_prob ~ flood_event + flood_L1 + flood_L2 + flood_F1 | panel_id + year + YearBuilt + adapted
                              | (policy_prob | policy_prob_L1 | policy_prob_L2 | policy_prob_F1 
                                 | flooded_insured | flooded_insured_L1 | flooded_insured_L2 | flooded_insured_F1
-                                ~ flood_event:reg_reform*adapted + flood_L1:reg_reform_L1*adapted 
-                                + flood_L2:reg_reform_L2:adapted + flood_F1:reg_reform_F1:adapted) 
-                             | censusTract, data = tzy_panel[sample_2L == TRUE])
-# summary(transprob_reg_2_lead)
-```
-
-```{r IV-3-F, include=FALSE}
-# Three Lags, One Lead
-transprob_reg_3_lead <- felm(transaction_prob ~ flood_event + flood_L1 + flood_L2 + flood_L3 + flood_F1 | panel_id + year 
-                             | (policy_prob | policy_prob_L1 | policy_prob_L2 | policy_prob_L3 | policy_prob_F1 
-                                | flooded_insured | flooded_insured_L1 | flooded_insured_L2 | flooded_insured_L3 | flooded_insured_F1
-                                ~ flood_event:reg_reform*adapted + flood_L1:reg_reform_L1*adapted 
-                                + flood_L2:reg_reform_L2:adapted + flood_L3:reg_reform_L3:adapted + flood_F1:reg_reform_F1:adapted) 
-                             | censusTract, data = tzy_panel[sample_2L == TRUE])
-# summary(transprob_reg_3_lead)
+                                ~ flood_event:reg_reform:adapted + reg_reform:adapted + flood_L1:reg_reform_L1:adapted
+                                + reg_reform_L1:adapted + flood_L2:reg_reform_L2:adapted + reg_reform_L2:adapted
+                                + flood_F1:reg_reform_F1:adapted + reg_reform_F1:adapted) 
+                             | censusTract, data = tzy_panel[sample_2L == TRUE], exactDOF = TRUE)
+summary(transprob_reg_2_lead)
 ```
 
 To disambiguate these effects, I instrument for insurance takeup, with Biggert-Waters and HFIAA providing exogenous variation in flood insurance premiums. Table \@ref(tab:IV-output) shows the regression results when I instrument for insurance takeup. I now find significant effects showing homes that experience flooding while holding insurance are less likely to be sold one or two years later. While the effect for a single year lag is consistent, the two year lag effect is washed out when a third year lag term is included. In addition, the main effects for holding insurance remain strong (concurrent effects and the longer lags, though the one year lag shows no effect) and maintain their signs from the uninstrumented regressions. 
@@ -259,13 +320,13 @@ To disambiguate these effects, I instrument for insurance takeup, with Biggert-W
 However, the effect sizes for the insurance main effects are now improbably large. These effect sizes suggest that my chosen identification strategy has not been successful. Some combination of multicollinearity between the adaptation instrument and the year fixed effects, and insufficient variation from the instrument is likely leading to a violation of the exclusion restriction, resulting in biased, invalid estimates. Further exploration and model modification may allow me to develop more credible estimates of these effects.
 
 ```{r IV-output, echo=FALSE, warning=FALSE, echo=FALSE, results='asis'}
-stargazer(transprob_reg_2, transprob_reg_3, transprob_reg_2_lead, transprob_reg_3_lead, 
+stargazer(transprob_reg_2, transprob_reg_3, transprob_reg_2_lead, 
           type=ifelse(knitr::is_latex_output(), "latex", ifelse(knitr::is_html_output(),"html" , "text")), 
           covariate.labels = covariate_labs, 
           title="Home Sale Probability Against Flood Events and Insurance, Instrumenting for Insurance", 
           dep.var.caption = "Probability of Home Sale", dep.var.labels.include = FALSE, 
           column.sep.width = "2pt", df=FALSE, digits = 4, header = FALSE, keep.stat = "n", label="tab:IV-output",
-          notes = "\\parbox[t]{0.5\\textwidth}{All regressions include fixed effects for census tract x flood zone and observation year, and standard errors are clustered at the census tract.}", font.size = "small")
+          notes = "\\parbox[t]{0.5\\textwidth}{All regressions include fixed effects for census tract x flood zone, observation year, construction year, and adaptation status. Standard errors are clustered by census tract.}", font.size = "small")
 ```
 
 # Discussion

@@ -1,0 +1,18 @@
+---
+title: Flood Insurance Impact on Post-Flood Home Sales
+subtitle: Revisions Cover Letter
+author: Connor P. Jackson
+date: "`r format(Sys.time(), '%B %d, %Y)`"
+output: pdf_document
+linestretch: 1.1
+linkcolor: blue
+urlcolor: blue
+---
+
+- corrected instrument problem (insufficient variation in the instruments with all the lags)
+- can't add more pre-period leads (can't even have both F1 and L3 in the same regression) due to timing of instrument
+- clarified adaptation in text
+- clarified estimating equation and unit of analysis
+- included results of first stage regression
+- don't need to drop a tau because we weren't saturating the possible event periods
+- 
