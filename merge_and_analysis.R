@@ -113,7 +113,7 @@ rm(flood_count, flood_frame)
 flood_panel[, c("censusTract", "floodZone") := tstrsplit(tract_zone, "_", fixed = TRUE, type.convert = TRUE)]
 flood_panel[, censusTract := as.integer64(censusTract)]
 flood_panel[is.na(flood_count), flood_count := 0]
-flood_panel[, flood_event := flood_count > 0]
+flood_panel[, flood_event := as.integer(flood_count > 0)]
 flood_panel[, tract_zone := NULL]
 
 ## TODO: change years to start in August or at the start of flood season?
@@ -161,7 +161,9 @@ tzy_panel[, policy_prob := policies_count / properties_count]
 tzy_panel[, adapted := YearBuilt > FIRMyear]
 tzy_panel[YearBuilt < 1974, adapted := FALSE]
 tzy_panel[YearBuilt == FIRMyear, adapted := NA]  # ambiguous within-year FIRM timing
-tzy_panel[, reg_reform := year >= 2013]
+tzy_panel[, adapted := as.integer(adapted)]
+tzy_panel[, adapted_text := ifelse(adapted == 1, "adapted (new homes)", "non-adapted (old homes)")]
+tzy_panel[, reg_reform := as.integer(year >= 2013)]
 
 # Create the lag flood policy and flood events data
 setorder(tzy_panel, censusTract, floodZone, YearBuilt, year)
