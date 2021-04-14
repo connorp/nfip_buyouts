@@ -94,9 +94,11 @@ setkey(sfha_homes, ImportParcelID, roll_year)
 
 nctrans_panel <- sfha_homes[nctrans_panel, roll = TRUE, rollends = TRUE]
 nctrans_panel[is.na(transaction_obs), transaction_obs := FALSE]
+nctrans_panel[, transaction_obs := as.integer(transaction_obs)]
 nctrans_panel[, roll_year := NULL]
 
 setnames(nctrans_panel, "FLD_ZONE", "floodZone")
+setkey(nctrans_panel, censusTract, floodZone, YearBuilt, ImportParcelID, year)
 
 ## ---- flood-events ----
 flood_frame <- CJ(tract_zone = unique(c(sfha_homes[, unique(paste(censusTract, FLD_ZONE, sep="_"))],
@@ -206,8 +208,35 @@ tzy_panel[, year := as.factor(year)]
 bad_tracts <- tzy_panel[in_sample == TRUE & policies_count > properties_count, unique(panel_id)]
 tzy_panel[panel_id %in% bad_tracts, in_sample := FALSE]
 
-# TODO: Fix the handful of inconsistencies when aggregating nctrans_panel up to tzy_panel
-# tzy_panel[in_sample == TRUE, .N, keyby = .(is.na(policies_L3), year)]
+## ---- house-level-panel ----
+
+nctrans_panel[, properties_count := .N, by = .(censusTract, floodZone, YearBuilt, year)]
+nctrans_panel <- merge(nctrans_panel, policies_panel, by = c("censusTract", "floodZone", "YearBuilt", "year"), all.x = TRUE)
+nctrans_panel <- merge(nctrans_panel, flood_panel, by = c("censusTract", "floodZone", "year"), all.x = TRUE)
+nctrans_panel <- merge(nctrans_panel, FIRMdates, by = c("censusTract", "floodZone"), all.x = TRUE)
+
+nctrans_panel[, policy_prob := policies_count / properties_count]
+nctrans_panel[, adapted := YearBuilt > FIRMyear]
+nctrans_panel[YearBuilt < 1974, adapted := FALSE]
+nctrans_panel[YearBuilt == FIRMyear, adapted := NA]  # ambiguous within-year FIRM timing
+nctrans_panel[, adapted := as.integer(adapted)]
+nctrans_panel[, adapted_text := ifelse(adapted == 1, "adapted (new homes)", ifelse(is.na(adapted), NA, "non-adapted (old homes)"))]
+nctrans_panel[, reg_reform := as.integer(year >= 2013)]
+nctrans_panel[, flooded_insured := flood_event*policy_prob]  # manually create the instrument
+
+# Create the lag transaction
+setorder(nctrans_panel, censusTract, floodZone, YearBuilt, ImportParcelID, year)
+nctrans_panel[, trans_F1 := shift(transaction_obs, 1, type = "lead"), by = .(censusTract, floodZone, YearBuilt, ImportParcelID)]
+nctrans_panel[, trans_F2 := shift(transaction_obs, 2, type = "lead"), by = .(censusTract, floodZone, YearBuilt, ImportParcelID)]
+nctrans_panel[, sale_2years := any(transaction_obs, trans_F1, trans_F2)]
+
+# year range: 2009-2016 (2017 is only thru September) (2009-2014 with lags)
+nctrans_panel[, in_sample := ((year %in% 2009:2014) & !is.na(adapted) & YearBuilt < 2009)]
+nctrans_panel[, panel_id := as.factor(paste(censusTract, floodZone, sep="_"))]
+nctrans_panel[, censusTract := as.factor(censusTract)]
+nctrans_panel[, YearBuilt := as.factor(YearBuilt)]
+nctrans_panel[, year := as.factor(year)]
+
 
 ## ---- census-data ----
 
