@@ -78,8 +78,8 @@ The [NFIP claims data](https://www.fema.gov/openfema-data-page/fima-nfip-redacte
 Finally, I also use the [national flood hazard layer](https://www.fema.gov/flood-maps/national-flood-hazard-layer) geospatial database to assign individual properties to flood zones, to allow matching with the policies and claims data.
 
 ```{r first-stage-graph, echo=FALSE, fig.cap="Flood insurance adoption, driven by Biggert-Waters and HFIAA, separately for adapted and non-adapted homes. The key source of variation in my first stage.", fig.dim=c(5,3.5)}
-firststage <- tzy_panel[in_sample == TRUE, .(polfrac = sum(policies_count) / sum(properties_count)), keyby = .(year, adapted_text)]
-ggplot(firststage, aes(x=year, y=polfrac)) + geom_point(aes(color = adapted_text, shape=adapted_text)) + geom_vline(xintercept=4.5) + geom_vline(xintercept=6.5) + ggtitle("Flood Insurance Adoption Over Time") + ylab("Fraction of Homes with Flood Insurance") + geom_text(aes(x=4.25, label="Biggert Waters Act", y=.03), angle=90)  + geom_text(aes(x=6.25, label="HFIAA", y=.03), angle=90)
+firststage <- nctrans_panel[full_sample == TRUE, .(polfrac = sum(policy_prob) / .N), keyby = .(year, adapted_text)]
+ggplot(firststage, aes(x=year, y=polfrac)) + geom_point(aes(color = adapted_text, shape=adapted_text)) + geom_vline(xintercept=2012.5) + ggtitle("Flood Insurance Adoption Over Time") + ylab("Fraction of Homes with Flood Insurance") + geom_text(aes(x=2012.35, label="Biggert Waters Act", y=.03), angle=90) + labs(shape="Adaptation Status", color="Adaptation Status")
 ```
 
 ## Housing Assessment and Transactions
@@ -89,8 +89,8 @@ The [ZTRAX data](https://www.zillow.com/research/ztrax/) are a real estate datab
 The transaction data contains information about every real estate transaction recorded for the parcels in the assessor data. The records include the date and type of transaction, information about the buyer, seller, and lender, if applicable, sale price and any taxes, and mortgage information. These data require extensive filtering to identify the set of records that correspond to "arm's length" transactions that correspond to true home sales, rather than refinancing, transfers to family members, or liens. Data are available for transactions from `r nctrans_panel[, min(year, na.rm = TRUE)]` through `r nctrans_panel[, max(year, na.rm = TRUE)]`. I discard homes that were built in the same year as their area's first flood insurance rate map (FIRM) which determines adaptation requirements, since the requirement within the same year is ambiguous, as well as homes with unrecorded years of construction. Figure \@ref(fig:trans-prob) shows the fraction of homes sold in a given sample year, separately for adapted and nonadapted homes. Depending on the number of lags, transactions in 2011 are sometimes excluded from the analysis. 
 
 ```{r trans-prob, echo=FALSE, fig.cap="Graph of home sale probability over time, separately for adapted and nonadapted homes.", fig.dim=c(5,3.5)}
-transtime <- tzy_panel[sample_2L == TRUE, .(transfrac = sum(transaction_count) / sum(properties_count)), keyby = .(year, adapted_text)]
-ggplot(transtime, aes(x=year, y=transfrac)) + geom_point(aes(color = adapted_text, shape=adapted_text)) + geom_vline(xintercept=2.5) + geom_vline(xintercept=4.5) + ggtitle("Home Sale Probability Over Time") + ylab("Probability of Home Sale") + geom_text(aes(x=2.25, label="Biggert Waters Act", y=.055), angle=90)  + geom_text(aes(x=4.25, label="HFIAA", y=.055), angle=90)
+transtime <- nctrans_panel[full_sample == TRUE, .(transfrac = mean(transaction_obs)), keyby = .(year, adapted_text)]
+ggplot(transtime, aes(x=year, y=transfrac)) + geom_point(aes(color = adapted_text, shape=adapted_text)) + geom_vline(xintercept=2012.5) + ggtitle("Home Sale Probability Over Time") + ylab("Probability of Home Sale") + geom_text(aes(x=2012.35, label="Biggert Waters Act", y=.055), angle=90)
 ```
 
 ## Constructed Panel
@@ -100,7 +100,7 @@ My analysis sample is comprised of arm's length transactions of single family ho
 ```{r panel-summary-stats, echo=FALSE, warning=FALSE}
 # panel descriptive statistics table. n, T, N, average homes per cell, average policies per cell
 # Average transaction probability in the sample: 
-sumstats <- tzy_panel[sample_2L == TRUE, 
+sumstats <- tzy_panel[full_sample == TRUE, 
           .(`Fraction of homes sold per year`= sum(transaction_count) / sum(properties_count),
             `Fraction of homes exposed to flood events` = sum(flood_event) / sum(properties_count),
             `Fraction of homes holding flood insurance` = sum(policies_count) / sum(properties_count),
@@ -119,10 +119,14 @@ kable(sumstats, digits = 4, caption = "Summary statistics of the analysis panel.
 To inspect the variation of home sales relative to flood events, I run a reduced form regression of transaction probability by years since (or before, for the one year lead) a flood event, controlling for adapted status. The results of this reduced form regression are shown in Table \@ref(tab:reduced-form), and indicate at least some responsiveness to flooding. Potentially concerningly, adapted homes appear to be slightly less likely to be sold when a flood event occurs in the _subsequent_ year, a coefficient one would expect to be 0. This result may point to some unexplained variation in transaction probability driven by trends from observation year or year of home construction that are not captured by the fixed effects. 
 
 ```{r transprob-byflood, echo=FALSE, warning=FALSE, results='asis'}
-transprob_flood <- felm(transaction_prob ~ adapted*flood_event + adapted*flood_L1 + adapted*flood_L2 
-                        + adapted*flood_L3 + adapted*flood_F1 | panel_id + year + YearBuilt | 0 | censusTract, 
-                        data = tzy_panel[sample_3L == TRUE])
-# summary(transprob_flood)
+transprob_flood_es <- felm(transaction_prob ~ adapted*flood_event + adapted*flood_L1 + adapted*flood_L2
+                        + adapted*flood_L3 + adapted*flood_F1 | panel_id + year + YearBuilt | 0 | censusTract,
+                        data = tzy_panel[es_sample_3L == TRUE])
+summary(transprob_flood_es)
+transprob_flood_dd <- felm(sale_2years ~ flood_event*adapted | panel_id + year + YearBuilt | 0 | censusTract,
+                        data = nctrans_panel[dd_sample == TRUE], exactDOF = TRUE)
+summary(transprob_flood_dd)
+
 stargazer(transprob_flood, type=ifelse(knitr::is_latex_output(), "latex", ifelse(knitr::is_html_output(),"html" , "text")), 
           covariate.labels = c("adaptation req.", "flood (concurrent)", "flood (1 year ago)", "flood (2 years ago)",
                                "flood (3 years ago)", "flood (next year)", "flood x adaptation (concurrent)",

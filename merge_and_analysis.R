@@ -222,21 +222,56 @@ nctrans_panel[YearBuilt == FIRMyear, adapted := NA]  # ambiguous within-year FIR
 nctrans_panel[, adapted := as.integer(adapted)]
 nctrans_panel[, adapted_text := ifelse(adapted == 1, "adapted (new homes)", ifelse(is.na(adapted), NA, "non-adapted (old homes)"))]
 nctrans_panel[, reg_reform := as.integer(year >= 2013)]
-nctrans_panel[, flooded_insured := flood_event*policy_prob]  # manually create the instrument
 
-# Create the lag transaction
+# Create the lead transaction for the DD approach
 setorder(nctrans_panel, censusTract, floodZone, YearBuilt, ImportParcelID, year)
 nctrans_panel[, trans_F1 := shift(transaction_obs, 1, type = "lead"), by = .(censusTract, floodZone, YearBuilt, ImportParcelID)]
 nctrans_panel[, trans_F2 := shift(transaction_obs, 2, type = "lead"), by = .(censusTract, floodZone, YearBuilt, ImportParcelID)]
-nctrans_panel[, sale_2years := any(transaction_obs, trans_F1, trans_F2)]
+nctrans_panel[, sale_2years := apply(.SD, 1, any), .SDcols = c("transaction_obs", "trans_F1", "trans_F2")]
 
-# year range: 2009-2016 (2017 is only thru September) (2009-2014 with lags)
-nctrans_panel[, in_sample := ((year %in% 2009:2014) & !is.na(adapted) & YearBuilt < 2009)]
+# create the lag other variables for the event study approach
+nctrans_panel[, policies_L1 := shift(policies_count, 1, type = "lag"), by = .(censusTract, floodZone, YearBuilt, ImportParcelID)]
+nctrans_panel[, policies_L2 := shift(policies_count, 2, type = "lag"), by = .(censusTract, floodZone, YearBuilt, ImportParcelID)]
+nctrans_panel[, policies_L3 := shift(policies_count, 3, type = "lag"), by = .(censusTract, floodZone, YearBuilt, ImportParcelID)]
+nctrans_panel[, policies_F1 := shift(policies_count, 1, type = "lead"), by = .(censusTract, floodZone, YearBuilt, ImportParcelID)]
+nctrans_panel[, flood_L1 := shift(flood_event, 1, type = "lag"), by = .(censusTract, floodZone, YearBuilt, ImportParcelID)]
+nctrans_panel[, flood_L2 := shift(flood_event, 2, type = "lag"), by = .(censusTract, floodZone, YearBuilt, ImportParcelID)]
+nctrans_panel[, flood_L3 := shift(flood_event, 3, type = "lag"), by = .(censusTract, floodZone, YearBuilt, ImportParcelID)]
+nctrans_panel[, flood_F1 := shift(flood_event, 1, type = "lead"), by = .(censusTract, floodZone, YearBuilt, ImportParcelID)]
+nctrans_panel[, policy_prob_L1 := policies_L1 / properties_count]
+nctrans_panel[, policy_prob_L2 := policies_L2 / properties_count]
+nctrans_panel[, policy_prob_L3 := policies_L3 / properties_count]
+nctrans_panel[, policy_prob_F1 := policies_F1 / properties_count]
+nctrans_panel[, reg_reform_L1 := shift(reg_reform, 1, type = "lag"), by = .(censusTract, floodZone, YearBuilt, ImportParcelID)]
+nctrans_panel[, reg_reform_L2 := shift(reg_reform, 2, type = "lag"), by = .(censusTract, floodZone, YearBuilt, ImportParcelID)]
+nctrans_panel[, reg_reform_L3 := shift(reg_reform, 3, type = "lag"), by = .(censusTract, floodZone, YearBuilt, ImportParcelID)]
+nctrans_panel[, reg_reform_F1 := shift(reg_reform, 1, type = "lead"), by = .(censusTract, floodZone, YearBuilt, ImportParcelID)]
+
+# manually create the instrument
+nctrans_panel[, flooded_insured := flood_event*policy_prob]
+nctrans_panel[, flooded_insured_L1 := flood_L1*policy_prob_L1]
+nctrans_panel[, flooded_insured_L2 := flood_L2*policy_prob_L2]
+nctrans_panel[, flooded_insured_L3 := flood_L3*policy_prob_L3]
+nctrans_panel[, flooded_insured_F1 := flood_F1*policy_prob_F1]
+
+# year range: 2009-2016 (2017 is only thru September)
+nctrans_panel[, full_sample := ((year %in% 2009:2016) & !is.na(adapted) & YearBuilt < 2009)]
 nctrans_panel[, panel_id := as.factor(paste(censusTract, floodZone, sep="_"))]
 nctrans_panel[, censusTract := as.factor(censusTract)]
-nctrans_panel[, YearBuilt := as.factor(YearBuilt)]
-nctrans_panel[, year := as.factor(year)]
+nctrans_panel[, YearBuilt_f := as.factor(YearBuilt)]
+nctrans_panel[, year_f := as.factor(year)]
 
+# TODO: figure out issue with policies exceeding properties
+# Most of the homes with mismatched policies are NEW homes! (~1/4 built 2000-2005)
+# Possible issues: geocoding problems, misreporting of construction year in either
+# dataset, should be using EffectiveYearBuilt rather than YearBuilt
+bad_tracts <- nctrans_panel[full_sample == TRUE & policy_prob > 1, unique(panel_id)]
+nctrans_panel[panel_id %in% bad_tracts, full_sample := FALSE]
+
+# Construct the analysis samples for the diff in diff and the event studies
+nctrans_panel[, dd_sample := full_sample & year <= 2014]
+nctrans_panel[, es_sample_2L := full_sample & year > 2010]
+nctrans_panel[, es_sample_3L := full_sample & year > 2011]
 
 ## ---- census-data ----
 
