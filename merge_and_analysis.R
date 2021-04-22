@@ -167,33 +167,33 @@ tzy_panel[, adapted := as.integer(adapted)]
 tzy_panel[, adapted_text := ifelse(adapted == 1, "adapted (new homes)", "non-adapted (old homes)")]
 tzy_panel[, reg_reform := as.integer(year >= 2013)]
 
-# Create the lag flood policy and flood events data
-setorder(tzy_panel, censusTract, floodZone, YearBuilt, year)
-tzy_panel[, policies_L1 := shift(policies_count, 1, type = "lag"), by = .(censusTract, floodZone, YearBuilt)]
-tzy_panel[, policies_L2 := shift(policies_count, 2, type = "lag"), by = .(censusTract, floodZone, YearBuilt)]
-tzy_panel[, policies_L3 := shift(policies_count, 3, type = "lag"), by = .(censusTract, floodZone, YearBuilt)]
-tzy_panel[, policies_F1 := shift(policies_count, 1, type = "lead"), by = .(censusTract, floodZone, YearBuilt)]
-tzy_panel[, flood_L1 := shift(flood_event, 1, type = "lag"), by = .(censusTract, floodZone, YearBuilt)]
-tzy_panel[, flood_L2 := shift(flood_event, 2, type = "lag"), by = .(censusTract, floodZone, YearBuilt)]
-tzy_panel[, flood_L3 := shift(flood_event, 3, type = "lag"), by = .(censusTract, floodZone, YearBuilt)]
-tzy_panel[, flood_F1 := shift(flood_event, 1, type = "lead"), by = .(censusTract, floodZone, YearBuilt)]
-tzy_panel[, policy_prob_L1 := policies_L1 / properties_count]
-tzy_panel[, policy_prob_L2 := policies_L2 / properties_count]
-tzy_panel[, policy_prob_L3 := policies_L3 / properties_count]
-tzy_panel[, policy_prob_F1 := policies_F1 / properties_count]
-tzy_panel[, reg_reform_L1 := shift(reg_reform, 1, type = "lag"), by = .(censusTract, floodZone, YearBuilt)]
-tzy_panel[, reg_reform_L2 := shift(reg_reform, 2, type = "lag"), by = .(censusTract, floodZone, YearBuilt)]
-tzy_panel[, reg_reform_L3 := shift(reg_reform, 3, type = "lag"), by = .(censusTract, floodZone, YearBuilt)]
-tzy_panel[, reg_reform_F1 := shift(reg_reform, 1, type = "lead"), by = .(censusTract, floodZone, YearBuilt)]
-
-# tractable instruments: legislative changes (2013 x adapted)
-# construct the instruments manually: flood_event:policy_prob | flood_L1:policy_prob_L1 | flood_L2:policy_prob_L2
-tzy_panel[, flooded_insured := flood_event*policy_prob]
-tzy_panel[, flooded_insured_L1 := flood_L1*policy_prob_L1]
-tzy_panel[, flooded_insured_L2 := flood_L2*policy_prob_L2]
-tzy_panel[, flooded_insured_L3 := flood_L3*policy_prob_L3]
-tzy_panel[, flooded_insured_F1 := flood_F1*policy_prob_F1]
-
+# # Create the lag flood policy and flood events data
+# setorder(tzy_panel, censusTract, floodZone, YearBuilt, year)
+# tzy_panel[, policies_L1 := shift(policies_count, 1, type = "lag"), by = .(censusTract, floodZone, YearBuilt)]
+# tzy_panel[, policies_L2 := shift(policies_count, 2, type = "lag"), by = .(censusTract, floodZone, YearBuilt)]
+# tzy_panel[, policies_L3 := shift(policies_count, 3, type = "lag"), by = .(censusTract, floodZone, YearBuilt)]
+# tzy_panel[, policies_F1 := shift(policies_count, 1, type = "lead"), by = .(censusTract, floodZone, YearBuilt)]
+# tzy_panel[, flood_L1 := shift(flood_event, 1, type = "lag"), by = .(censusTract, floodZone, YearBuilt)]
+# tzy_panel[, flood_L2 := shift(flood_event, 2, type = "lag"), by = .(censusTract, floodZone, YearBuilt)]
+# tzy_panel[, flood_L3 := shift(flood_event, 3, type = "lag"), by = .(censusTract, floodZone, YearBuilt)]
+# tzy_panel[, flood_F1 := shift(flood_event, 1, type = "lead"), by = .(censusTract, floodZone, YearBuilt)]
+# tzy_panel[, policy_prob_L1 := policies_L1 / properties_count]
+# tzy_panel[, policy_prob_L2 := policies_L2 / properties_count]
+# tzy_panel[, policy_prob_L3 := policies_L3 / properties_count]
+# tzy_panel[, policy_prob_F1 := policies_F1 / properties_count]
+# tzy_panel[, reg_reform_L1 := shift(reg_reform, 1, type = "lag"), by = .(censusTract, floodZone, YearBuilt)]
+# tzy_panel[, reg_reform_L2 := shift(reg_reform, 2, type = "lag"), by = .(censusTract, floodZone, YearBuilt)]
+# tzy_panel[, reg_reform_L3 := shift(reg_reform, 3, type = "lag"), by = .(censusTract, floodZone, YearBuilt)]
+# tzy_panel[, reg_reform_F1 := shift(reg_reform, 1, type = "lead"), by = .(censusTract, floodZone, YearBuilt)]
+#
+# # tractable instruments: legislative changes (2013 x adapted)
+# # construct the instruments manually: flood_event:policy_prob | flood_L1:policy_prob_L1 | flood_L2:policy_prob_L2
+# tzy_panel[, flooded_insured := flood_event*policy_prob]
+# tzy_panel[, flooded_insured_L1 := flood_L1*policy_prob_L1]
+# tzy_panel[, flooded_insured_L2 := flood_L2*policy_prob_L2]
+# tzy_panel[, flooded_insured_L3 := flood_L3*policy_prob_L3]
+# tzy_panel[, flooded_insured_F1 := flood_F1*policy_prob_F1]
+#
 
 # year range: 2009-2016 (2017 is only thru September) (2012-2016 with lags)
 tzy_panel[, in_sample := ((year %in% 2009:2016) & !is.na(adapted) & YearBuilt < 2009)]
