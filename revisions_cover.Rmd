@@ -15,4 +15,6 @@ urlcolor: blue
 - clarified estimating equation and unit of analysis
 - included results of first stage regression
 - don't need to drop a tau because we weren't saturating the possible event periods
-- 
+- added Diff in Diff style regression in addition to event study
+- updated summary statistics by adaptation status and flooded/unflooded in sample
+- not clustering by year since most flood events were from a handful of years (mostly Hurricane matthew in 2016)

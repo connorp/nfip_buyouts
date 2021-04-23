@@ -73,7 +73,7 @@ This research is built upon two primary data sources: flood insurance policies, 
 
 FEMA publishes deidentified micro data on all [NFIP policies](https://www.fema.gov/openfema-data-page/openfema-dataset-fima-nfip-redacted-policies--v1) underwritten by the federal government, which covers nearly all flood insurance policies written in the United States. The data describes the amount of coverage, premiums and fees, deductibles, and attributes about the covered property. Properties are identified down to the census tract, and also have flood zone and year of construction, which I use to match with the real estate data. Flood insurance policy data are available for the years `r policies[, min(year(policyEffectiveDate))]`–`r policies[, max(year(policyEffectiveDate))]`. I discard policies that cover only home contents and not the structure itself. Figure \@ref(fig:first-stage-graph) shows insurance takeup over time, with the two major reforms to insurance premiums, Biggert-Waters and HFIAA, indicated. Takeup is shown separately for adapted and non-adapted homes, as they are subject to different premium rate schedules and different price shocks. Adapted homes are those that were constructed (or substantially renovated) after the publication of their area's first flood insurance rate map (FIRM). New or renovated homes in special flood hazard areas with an existing, published FIRM are required to be adapted by elevating the lowest occupied level of the home above a pre-defined "base flood elevation" to reduce the risk of damage from flooding.
 
-The [NFIP claims data](https://www.fema.gov/openfema-data-page/fima-nfip-redacted-claims-v1) tabulate every claim filed with the NFIP in the state from `r claims[, min(year(dateOfLoss))]` through `r claims[, max(year(dateOfLoss))]`. The data include details about the insured property, the insurance coverage, the loss event, and subsequent claim and payout. I discard claims that cover only loss of contents (either due to the policyholder not holding any building coverage, or not submitting a claim for building damage), as well as those with listed payouts that exceed the maximum coverage of $250,000. The claims data are used to identify which properties were exposed to flooding in a given year. Since a given property's vulnerability to flood damage is endogenous, through defensive investments, home elevation, etc., I define exposure to flooding by indicating whether a flood claim was filed within the intersection of a census tract and flood zone in each year. 
+The [NFIP claims data](https://www.fema.gov/openfema-data-page/fima-nfip-redacted-claims-v1) tabulate every claim filed with the NFIP in the state from `r claims[, min(year(dateOfLoss))]` through `r claims[, max(year(dateOfLoss))]`. The data include details about the insured property, the insurance coverage, the loss event, and subsequent claim and payout. I discard claims that cover only loss of contents (either due to the policyholder not holding any building coverage, or not submitting a claim for building damage), as well as those with listed payouts that exceed the maximum coverage of $250,000. The claims data are used to identify which properties were exposed to flooding in a given year. Since a given property's vulnerability to flood damage is endogenous, through defensive investments, home elevation, etc., I define exposure to flooding by indicating whether a flood claim was filed within the intersection of a census tract and flood zone in each year. One potential issue with using insurance claims data to define flood experiences: it requires at least some homes to hold flood insurance in the exposed area. This connection may result in bias if areas holding fewer insurance policies are then less likely to register a flood event in our data, even if the true incidence of flooding is as high or higher than areas holding more insurance policies. A more comprehensive spatial flooding dataset, such as [NASA's MODIS Global Flood Mapping](https://floodmap.modaps.eosdis.nasa.gov/), could be an improvement in this methodology for future research.
 
 Finally, I also use the [national flood hazard layer](https://www.fema.gov/flood-maps/national-flood-hazard-layer) geospatial database to assign individual properties to flood zones, to allow matching with the policies and claims data.
 
@@ -100,20 +100,35 @@ My analysis sample is comprised of arm's length transactions of single family ho
 ```{r panel-summary-stats, echo=FALSE, warning=FALSE}
 # panel descriptive statistics table. n, T, N, average homes per cell, average policies per cell
 # Average transaction probability in the sample: 
-sumstats <- tzy_panel[full_sample == TRUE, 
-          .(`Fraction of homes sold per year`= sum(transaction_count) / sum(properties_count),
-            `Fraction of homes exposed to flood events` = sum(flood_event) / sum(properties_count),
-            `Fraction of homes holding flood insurance` = sum(policies_count) / sum(properties_count),
-            `Number of property cells` = uniqueN(paste(panel_id, YearBuilt, sep="_")),
-            `Number of years in the panel (two lags)` = uniqueN(year),
-            `Total sample size (two lags)` = .N,
-            `Average number of homes per cell` = sum(properties_count) / .N,
-            `Average number of insurance policies per cell` = sum(policies_count) / .N,
-            `Fraction of homes adapted` = sum(adapted * properties_count) / sum(properties_count))]
-sumstats <- data.frame(t(sumstats))
-colnames(sumstats) <- ""
-kable(sumstats, digits = 4, caption = "Summary statistics of the analysis panel.", 
-      format.args=list(big.mark = ",", scientific=FALSE, drop0trailing=TRUE), col.names = NULL)
+
+summary_cols <- c("TotalMarketValue", "transaction_obs", "flood_event", "policy_prob", "adapted")
+adapted_sum <- melt(nctrans_panel[full_sample == TRUE, lapply(.SD, mean, na.rm = TRUE), 
+                                  by = .(adapted_text), .SDcols=summary_cols], id.vars = "adapted_text")
+adapted_sum[variable == "TotalMarketValue", value := round(value, 0)]
+
+flooded_areas <- unique(tzy_panel[in_sample == TRUE, .(panel_id, year, flood_event)])[, .(flooded=sum(flood_event) > 0), by = .(panel_id)][flooded == TRUE, panel_id]
+flooded_sum <- melt(nctrans_panel[full_sample == TRUE, lapply(.SD, mean, na.rm = TRUE), 
+                                  by = .(flooded=ifelse(panel_id %in% flooded_areas, "flooded during panel", "not flooded during panel")), 
+                                  .SDcols=summary_cols], id.vars = "flooded")
+flooded_sum[variable == "TotalMarketValue", value := round(value, 0)]
+
+cellsizes_ad <- melt(tzy_panel[in_sample == TRUE, .(`homes per policy-match cell` = mean(properties_count), 
+                                                 `standard deviation of homes per match cell` = sd(properties_count)), 
+                            by=adapted_text], id.vars = "adapted_text")
+cellsizes_fl <- melt(tzy_panel[in_sample == TRUE, .(`homes per policy-match cell` = mean(properties_count), 
+                                                 `standard deviation of homes per match cell` = sd(properties_count)), 
+                            by=.(flooded=ifelse(panel_id %in% flooded_areas, "flooded during panel", "not flooded during panel"))], id.vars = "flooded")
+
+adapted_sum <- dcast(rbind(adapted_sum, cellsizes_ad), variable ~ adapted_text)
+flooded_sum <- dcast(rbind(flooded_sum, cellsizes_fl), variable ~ flooded)
+sumstats <- merge(adapted_sum, flooded_sum, by = "variable")
+sumstats$variable <- c("Market Value", "Sale During Panel", "Flood Probability During Panel", 
+                       "Probability of Holding Insurance During Panel", "Proportion Adapted (new homes)",
+                       "Mean number of homes per policy-match cell",
+                       "Standard deviation of homes per match cell")
+
+kable(sumstats, digits = 4, caption = "Summary statistics of the analysis panel, 2009--2016", 
+      format.args=list(big.mark = ",", scientific=FALSE, drop0trailing=TRUE))
 ```
 
 To inspect the variation of home sales relative to flood events, I run a reduced form regression of transaction probability by years since (or before, for the one year lead) a flood event, controlling for adapted status. The results of this reduced form regression are shown in Table \@ref(tab:reduced-form), and indicate at least some responsiveness to flooding. Potentially concerningly, adapted homes appear to be slightly less likely to be sold when a flood event occurs in the _subsequent_ year, a coefficient one would expect to be 0. This result may point to some unexplained variation in transaction probability driven by trends from observation year or year of home construction that are not captured by the fixed effects. 
