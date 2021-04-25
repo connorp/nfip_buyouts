@@ -10,6 +10,7 @@ urlcolor: blue
 ---
 
 - corrected instrument problem (insufficient variation in the instruments with all the lags)
+  - even with corrected specification and no lags, still insufficient variation for good identification
 - can't add more pre-period leads (can't even have both F1 and L3 in the same regression) due to timing of instrument
 - clarified adaptation in text
 - clarified estimating equation and unit of analysis
@@ -19,3 +20,4 @@ urlcolor: blue
 - updated summary statistics by adaptation status and flooded/unflooded in sample
 - not clustering by year since most flood events were from a handful of years (mostly Hurricane matthew in 2016)
 - not doing event study graphs because the estimates are bad
+- agree with Abdou's point about post-sale insurance takeup, need better data wrangling

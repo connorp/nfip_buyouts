@@ -101,12 +101,16 @@ setnames(nctrans_panel, "FLD_ZONE", "floodZone")
 setkey(nctrans_panel, censusTract, floodZone, YearBuilt, ImportParcelID, year)
 
 ## ---- flood-events ----
+# Start the flood year August 1
+claims[, year := year(yearofLoss)]
+claims[, year_corrected := year(yearofLoss)]
+claims[month(dateOfLoss) >= 8, year_corrected := year_corrected + 1]
+
 flood_frame <- CJ(tract_zone = unique(c(sfha_homes[, unique(paste(censusTract, FLD_ZONE, sep="_"))],
                                          claims[sfha == TRUE, unique(paste(censusTract, floodZone, sep="_"))])),
                   year = claims[, unique(year(yearofLoss))])
 
-flood_count <- claims[sfha == TRUE, .(flood_count = .N), by = .(tract_zone = paste(censusTract, floodZone, sep="_"),
-                                                                year = year(yearofLoss))]
+flood_count <- claims[sfha == TRUE, .(flood_count = .N), by = .(tract_zone = paste(censusTract, floodZone, sep="_"), year)]
 setkey(flood_count, tract_zone, year)
 
 flood_panel <- merge(flood_count, flood_frame, all = TRUE)
