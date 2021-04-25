@@ -221,6 +221,7 @@ nctrans_panel[YearBuilt < 1974, adapted := FALSE]
 nctrans_panel[YearBuilt == FIRMyear, adapted := NA]  # ambiguous within-year FIRM timing
 nctrans_panel[, adapted := as.integer(adapted)]
 nctrans_panel[, adapted_text := ifelse(adapted == 1, "adapted (new homes)", ifelse(is.na(adapted), NA, "non-adapted (old homes)"))]
+nctrans_panel[, nonadapted := 1-adapted]
 nctrans_panel[, reg_reform := as.integer(year >= 2013)]
 
 # Create the lead transaction for the DD approach
