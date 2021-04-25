@@ -18,3 +18,4 @@ urlcolor: blue
 - added Diff in Diff style regression in addition to event study
 - updated summary statistics by adaptation status and flooded/unflooded in sample
 - not clustering by year since most flood events were from a handful of years (mostly Hurricane matthew in 2016)
+- not doing event study graphs because the estimates are bad
