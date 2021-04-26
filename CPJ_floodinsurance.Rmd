@@ -28,6 +28,7 @@ abstract: "Welfare improving buyouts of high flood risk homes need to be careful
 ```{r setup, include=FALSE}
 library(bookdown)
 library(knitr)
+library(kableExtra)
 library(pander)
 library(rmarkdown)
 library(stargazer)
@@ -131,7 +132,9 @@ sumstats[, variable := NULL]
 setDF(sumstats, rownames=sumstats_rn)
 kable(sumstats, digits = 4, caption = "Summary statistics of the analysis panel, 2009--2016",
       format.args=list(big.mark = ",", scientific=FALSE, drop0trailing=TRUE), format="latex",
-      booktabs = TRUE, linesep = "", align = "lcccc")
+      booktabs = TRUE, linesep = "\\addlinespace", align = "lcccc") %>%
+  kable_styling(latex_options = "scale_down") %>%
+  column_spec(column=1, width="1.7in")
 # pander(sumstats, caption = "(\\#tab:panel-summary-stats) Summary statistics of the analysis panel, 2009--2016",
 #        justify="lcccc", split.cells=c(24, 11, 11, 13, 13))
 ```
@@ -160,7 +163,7 @@ stargazer(transprob_flood_dd, transprob_flood_es, type=ifelse(knitr::is_latex_ou
           dep.var.caption = "Probability of home sale…", dep.var.labels.include = FALSE, 
           column.labels = c("Within the next two years", "This year"),
           df=FALSE, digits = 4, header = FALSE, keep.stat = c("n", "rsq"), label="tab:reduced-form",
-          notes = "\\parbox[t]{0.4\\textwidth}{Fixed effects: census tract x flood zone, observation year, home construction year. Clustering SEs by census tract.}",
+          notes = "\\parbox[t]{0.5\\textwidth}{Fixed effects: census tract x flood zone, observation year, home construction year. Clustering SEs by census tract.}",
           no.space = TRUE, single.row = TRUE, font.size = "small")
 ```
 
@@ -223,7 +226,7 @@ stargazer(FS_policy_prob, FS_policy_fld_prob, FS_policy_prob_lags, FS_policy_fld
           title="First Stage: Instrumenting for Insurance Takeup", font.size = "small", column.separate = c(2,2),
           dep.var.caption = "Probability of Insurance Takeup", dep.var.labels = rep(c("Insured", "Insured x Flooded"), 2),
           df=FALSE, digits = 4, header = FALSE, keep.stat = c("n", "rsq"), label="tab:first-stage-output", column.sep.width = "1pt",
-          notes = "\\parbox[t]{0.5\\textwidth}{Fixed effects: census tract x flood zone, observation year, and home construction year. Clustering SEs by census tract.}")
+          notes = "\\parbox[t]{0.6\\textwidth}{Fixed effects: census tract x flood zone, observation year, and home construction year. Clustering SEs by census tract.}")
 ```
 
 This econometric approach requires two identification assumptions: first, the probability of a home experiencing flooding is exogenous, conditional on census tract, flood zone, and adaptation status. Obviously, floods are highly spatially and temporally correlated, and homeowners can undertake substantial defensive investments (primarily though elevation) to reduce their risk. But by defining a flood event at the census tract x flood zone level, we exclude the peculiarities of a given house, and think only about the generalized flood risk in the local area. Once we control for these broader spatial effects, exogeneity of flood probability is much more credible.
@@ -287,7 +290,7 @@ stargazer(OLS_transprob_dd, OLS_transprob_reg_2, OLS_transprob_reg_3, OLS_transp
           dep.var.caption = "Probability of Home Sale…", column.labels = c("Within the next two years", "This year"),
           dep.var.labels.include = FALSE, label="tab:OLS-output", column.separate = c(1,3),
           column.sep.width = "2pt", df=FALSE, digits = 4, header = FALSE, keep.stat = c("n", "rsq"),
-          notes = "\\parbox[t]{0.5\\textwidth}{Fixed effects: census tract x flood zone, observation year, home construction year, adaptation status. Clustering SEs by census tract.}", font.size = "small")
+          notes = "\\parbox[t]{0.55\\textwidth}{Fixed effects: census tract x flood zone, observation year, home construction year, adaptation status. Clustering SEs by census tract.}", font.size = "small")
 ```
 
 ## Instrumenting for Insurance Takeup
@@ -346,7 +349,7 @@ stargazer(transprob_reg_dd, transprob_reg_2, transprob_reg_3, transprob_reg_2_le
           title="Home Sale Probability Against Flood Events and Insurance, Instrumenting for Insurance", 
           dep.var.caption = "Probability of Home Sale…", column.labels = c("Within the next two years", "This year"), 
           column.sep.width = "2pt", df=FALSE, digits = 4, header = FALSE, keep.stat = "n", label="tab:IV-output",
-          notes = "\\parbox[t]{0.5\\textwidth}{Fixed effects: census tract x flood zone, observation year, home construction year, adaptation status. Clustering SEs by census tract.}", font.size = "small")
+          notes = "\\parbox[t]{0.55\\textwidth}{Fixed effects: census tract x flood zone, observation year, home construction year, adaptation status. Clustering SEs by census tract.}", font.size = "small")
 ```
 
 # Conclusions

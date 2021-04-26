@@ -1,23 +1,21 @@
 ---
-title: Flood Insurance Impact on Post-Flood Home Sales
-subtitle: Revisions Cover Letter
-author: Connor P. Jackson
-date: "`r format(Sys.time(), '%B %d, %Y)`"
 output: pdf_document
-linestretch: 1.1
 linkcolor: blue
 urlcolor: blue
 ---
 
-- corrected instrument problem (insufficient variation in the instruments with all the lags)
-  - even with corrected specification and no lags, still insufficient variation for good identification
-- can't add more pre-period leads (can't even have both F1 and L3 in the same regression) due to timing of instrument
-- clarified adaptation in text
-- clarified estimating equation and unit of analysis
-- included results of first stage regression
-- don't need to drop a tau because we weren't saturating the possible event periods
-- added Diff in Diff style regression in addition to event study
-- updated summary statistics by adaptation status and flooded/unflooded in sample
-- not clustering by year since most flood events were from a handful of years (mostly Hurricane matthew in 2016)
-- not doing event study graphs because the estimates are bad
-- agree with Abdou's point about post-sale insurance takeup, need better data wrangling
+Michael and Max,
+
+Thank you for your helpful comments, as well as those from my reviewers. I have made several revisions and updates to my paper in accordance with them. First, I have corrected the construction of my instrument to leverage exogenous changes in premiums from Biggert-Waters that applied _differentially_ for adapted and non-adapted homes, by interacting the year indicator with an adaptation indicator. This formation of the instrument thus avoids collinearity with my year fixed effects. I also added a deeper description of adaptation status in the text, along with more information about the indices in the estimating equations and the unit of analysis in the regressions. I also added results from several first stage regressions and updated summary statistics that report separately for adapted/nonadapted homes, and flooded/unflooded homes.
+
+Per Abdou's suggestion, I switched my main estimating equation from an event study-style regression to a difference-in-differences regression where I look for home sales in the subsequent two years. I kept the event study regressions as alternative specifications to inspect how the effect develops over time. This change had the added benefit of reducing the number of endogenous regressors in my specifications, from up to 8 down to merely two. My instruments (really just a single instrument, interacted with an exogenous regressor and its lagged equivalents) were struggling to provide enough variation to successfully identify that many endogenous regressors. Sadly, the change did not entirely eliminate the problem, but I believe it did help the situation. To implement this change, I also changed the structure of my data, no longer aggregating up to the "cells" of homes. I simply do that aggregation to define the insurance takeup (since I still cannot match policies to houses perfectly), but otherwise run my regressions on individual home-level data. This approach has provided me with some additional power and removed some of the complications in my code as well. 
+
+Sara asked why I do not need to drop one of the sets of coefficients $\tau$ in the event study specification. It is not necessary in my specification because I do not saturate the model with a full set of lags. So the base case left in the intercept is the transaction probability three or more years removed from a flood. Abdou raised an important concern about potential selection of insurance that differs before and after sales. This is in fact an important effect, as consumers are required to hold flood insurance with a federally backed mortgage, and almost always do so upon purchasing their home. However, many homeowners let their insurance lapse after a few years, since enforcement of this requirement is quite lax. This selection deserves additional exploration, but doing so would require a much deeper analysis of the specific dates of sale, of flood events, and of insurance policy coverage, which I am not sure I can accomplish with my current, imperfectly matched data.
+
+Finally, a few changes I did not make. First, I did not re-geocode any of the home locations in my data. It is a step I would like to take in the future, but it would have involved a nontrivial effort that I felt was time better spent elsewhere, and following conversations with Katherine Wagner, I believe they are not likely to make an enormous impact on my use, since I am only trying to assign homes to flood zones, not precisely match locations. Second, I am unable to add additional pre-period lags to explore pre-trends because of the limited number of years in my sample, and the fact that my instrument is temporally situated near one end of the sample. I also decided not to cluster standard errors by year, since flood events are obviously highly temporally correlated, and within my narrow sample window, most floods took place in just one or two years. If I were working with nationwide data with a broader array of flood events, I think this change would be an important robustness check, but I do not believe it to be feasible with my limited sample of just one state and 7 years. Finally, I did not develop any event study graphs of my regression results, both because I have moved away from the event study specification as my primary specification, and I deemed the results too uninteresting and/or unreliable to be worth the additional display.
+
+Thank you again for your guidance and comments. I would happily accept any other feedback you have.
+
+Best,
+
+Connor P. Jackson
