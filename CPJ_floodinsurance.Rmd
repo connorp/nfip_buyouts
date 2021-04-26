@@ -77,7 +77,7 @@ This research is built upon two primary data sources: flood insurance policies, 
 
 FEMA publishes deidentified micro data on all [NFIP policies](https://www.fema.gov/openfema-data-page/openfema-dataset-fima-nfip-redacted-policies--v1) underwritten by the federal government, which covers nearly all flood insurance policies written in the United States. The data describe the amount of coverage, premiums and fees, deductibles, and attributes of the covered property. Properties are identified down to the census tract, and also report flood zone and year of construction, which I use to match with the real estate data. Flood insurance policy data are available for the years `r policies[, min(year(policyEffectiveDate))]`–`r policies[, max(year(policyEffectiveDate))]`. I discard policies that cover only home contents and not the structure itself. Figure \@ref(fig:first-stage-graph) shows insurance takeup over time, with the Biggert-Waters reform indicated. Takeup is shown separately for adapted and non-adapted homes, as they are subject to different premium rate schedules and different price shocks. Adapted homes are those that were constructed (or substantially renovated) after the publication of their area's first flood insurance rate map (FIRM). New or renovated homes in special flood hazard areas with an existing, published FIRM are required to be adapted by elevating the lowest occupied level of the home above a pre-defined "base flood elevation" to reduce the risk of damage from flooding.
 
-```{r first-stage-graph, echo=FALSE, fig.cap="Flood insurance adoption, driven by Biggert-Waters, separately for adapted and non-adapted homes. The key source of variation in my first stage.", fig.dim=c(7,3.5)}
+```{r first-stage-graph, echo=FALSE, fig.cap="Flood insurance adoption, driven by Biggert-Waters, separately for adapted and non-adapted homes. The key source of variation in my first stage.", fig.dim=c(7,4)}
 firststage <- nctrans_panel[full_sample == TRUE, .(polfrac = sum(policy_prob) / .N), keyby = .(year, adapted_text)]
 ggplot(firststage, aes(x=year, y=polfrac)) + geom_point(aes(color = adapted_text, shape=adapted_text)) + geom_vline(xintercept=2012.5) + ggtitle("Flood Insurance Adoption Over Time") + ylab("Fraction of Homes with Flood Insurance") + geom_text(aes(x=2012.35, label="Biggert-Waters Act", y=.03), angle=90) + labs(shape="Adaptation Status", color="Adaptation Status")
 ```
@@ -126,13 +126,14 @@ sumstats$variable <- c("Market Value", "Sale During Panel", "Flood Probability D
                        "Mean number of homes per policy-match cell",
                        "Standard deviation of homes per match cell")
 # colnames(sumstats) <- c("", colnames(sumstats)[2:5])
-# kable(sumstats, digits = 4, caption = "Summary statistics of the analysis panel, 2009--2016", 
-#       format.args=list(big.mark = ",", scientific=FALSE, drop0trailing=TRUE))
 sumstats_rn <- sumstats[, variable]
 sumstats[, variable := NULL]
 setDF(sumstats, rownames=sumstats_rn)
-pander(sumstats, caption = "(\\#tab:panel-summary-stats) Summary statistics of the analysis panel, 2009--2016",
-       justify="lcccc", split.cells=c(24, 11, 11, 13, 13))
+kable(sumstats, digits = 4, caption = "Summary statistics of the analysis panel, 2009--2016",
+      format.args=list(big.mark = ",", scientific=FALSE, drop0trailing=TRUE), format="latex",
+      booktabs = TRUE, linesep = "", align = "lcccc")
+# pander(sumstats, caption = "(\\#tab:panel-summary-stats) Summary statistics of the analysis panel, 2009--2016",
+#        justify="lcccc", split.cells=c(24, 11, 11, 13, 13))
 ```
 
 One potential issue in my data is that year of construction is not always properly recorded in county records or by the NFIP, adding error to the matching process. This issue is particularly pernicious because a sufficiently comprehensive renovation can result in a much later "effective" year of construction, subjecting a previously old house to new adaptation requirements, and county assessor records may or may not reflect this new construction year. This problem occasionally manifests as some set of matched homes having more insurance policies than homes. In these instances, I drop from the analysis all homes and matched insurance policies in each of the intersections of census tracts and flood zones that have this problem, for all construction years. A more detailed analysis could resolve or more delicately handle this mismatch for future research. 
@@ -159,7 +160,7 @@ stargazer(transprob_flood_dd, transprob_flood_es, type=ifelse(knitr::is_latex_ou
           dep.var.caption = "Probability of home sale…", dep.var.labels.include = FALSE, 
           column.labels = c("Within the next two years", "This year"),
           df=FALSE, digits = 4, header = FALSE, keep.stat = c("n", "rsq"), label="tab:reduced-form",
-          notes = "\\parbox[t]{0.3\\textwidth}{Fixed effects: census tract x flood zone, observation year, home construction year. Clustering SEs by census tract.}",
+          notes = "\\parbox[t]{0.4\\textwidth}{Fixed effects: census tract x flood zone, observation year, home construction year. Clustering SEs by census tract.}",
           no.space = TRUE, single.row = TRUE, font.size = "small")
 ```
 
@@ -207,7 +208,7 @@ FS_policy_fld_prob_lags <- felm(flooded_insured ~ flood_event*(reg_reform:adapte
 # summary(FS_policy_fld_prob_lags)
 ```
 
-```{r First-stage-output, echo=FALSE, warning=FALSE, echo=FALSE, results='asis'}
+```{r first-stage-output, echo=FALSE, warning=FALSE, echo=FALSE, results='asis'}
 first_stage_covars <- c("flood (concurrent)", "flood (1 year ago)", "flood (2 years ago)", 
                     "flood (next year)", "adapted", "adapted x year>2012",
                     "adapted x year>2012 (1 year ago)", "adapted x year>2012 (2 years ago)",
@@ -229,7 +230,7 @@ This econometric approach requires two identification assumptions: first, the pr
 
 The second identification assumption is that any time trends in transaction probability must be common to adapted and non-adapted homes. The instrument for insurance leverages _differential_ price changes for adapted and non-adapted homes, so common time trends do not effect the coefficient estimates, but differential time trends will violate the exclusion restriction and yield biased estimates. While it is certainly possible that older and newer homes had diverging sale trends during this period, the threshold year defining adapted and non-adapted homes differed in different areas depending on the first FIRM published for the region, ranging primarily from the mid-1970s to the mid-1990s, with some initial FIRMs established even later. This diversity of adaptation years will hopefully dilute any differing trends driven by home construction year. Figure \@ref(fig:trans-prob) shows the fraction of homes sold in a given sample year, separately for adapted and non-adapted homes. While the probability levels are different, the trends appear to be similar in the two series, lending credence to this identification assumption.
 
-```{r trans-prob, echo=FALSE, fig.cap="Graph of home sale probability over time, separately for adapted and nonadapted homes.", fig.dim=c(7,3.5)}
+```{r trans-prob, echo=FALSE, fig.cap="Graph of home sale probability over time, separately for adapted and nonadapted homes.", fig.dim=c(7,4)}
 transtime <- nctrans_panel[full_sample == TRUE, .(transfrac = mean(transaction_obs)), keyby = .(year, adapted_text)]
 ggplot(transtime, aes(x=year, y=transfrac)) + geom_point(aes(color = adapted_text, shape=adapted_text)) + geom_vline(xintercept=2012.5) + ggtitle("Home Sale Probability Over Time") + ylab("Probability of Home Sale") + geom_text(aes(x=2012.35, label="Biggert-Waters Act", y=.055), angle=90) + labs(shape="Adaptation Status", color="Adaptation Status")
 ```
@@ -345,7 +346,7 @@ stargazer(transprob_reg_dd, transprob_reg_2, transprob_reg_3, transprob_reg_2_le
           title="Home Sale Probability Against Flood Events and Insurance, Instrumenting for Insurance", 
           dep.var.caption = "Probability of Home Sale…", column.labels = c("Within the next two years", "This year"), 
           column.sep.width = "2pt", df=FALSE, digits = 4, header = FALSE, keep.stat = "n", label="tab:IV-output",
-          notes = "\\parbox[t]{0.8\\textwidth}{Fixed effects: census tract x flood zone, observation year, home construction year, adaptation status. Clustering SEs by census tract.}", font.size = "small")
+          notes = "\\parbox[t]{0.5\\textwidth}{Fixed effects: census tract x flood zone, observation year, home construction year, adaptation status. Clustering SEs by census tract.}", font.size = "small")
 ```
 
 # Conclusions
